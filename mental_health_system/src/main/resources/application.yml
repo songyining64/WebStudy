@@ -1,0 +1,30 @@
+spring:
+  config:
+    import: optional:secrets.properties  # ✅ 加载你的 secrets 文件
+  application:
+    name: MentalHealthSystem
+  datasource:
+    url: jdbc:mysql://localhost:3306/mental_health_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: 123456
+  jackson:
+    date-format: yyyy-MM-dd
+    time-zone: GMT+8
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.cupk.entity
+
+server:
+  port: 8080
+  servlet:
+    context-path: /mental
+
+deepseek:
+  api:
+    key: ${DEEPSEEK_API_KEY}
+    url: https://api.deepseek.com/v1/chat/completions

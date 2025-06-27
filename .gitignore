@@ -1,0 +1,27 @@
+# 🔒 敏感文件防护
+**/secrets.properties
+**/application-*.properties  # 按需添加其他环境配置
+**/config/private/**
+
+# 🛡️ IDE防御区
+.vscode/
+.idea/
+*.iml
+*.swp
+
+# 🧹 Java编译产物
+target/
+*.class
+*.jar
+*.war
+
+# 🌪️ 前端防御层
+node_modules/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 🗄️ 系统文件
+.DS_Store
+Thumbs.db
