@@ -14,24 +14,59 @@ public class PostLikeController {
         this.postLikeService = postLikeService;
     }
 
-    @PostMapping("/{postId}")
-    public Result<Boolean> likePost(@PathVariable Long postId, @RequestParam Long userId) {
+    /**
+     * 点赞帖子
+     *
+     * @param postId 帖子ID
+     * @param userId 用户ID
+     * @return 点赞结果
+     */
+    @PostMapping("/{postId}/users/{userId}")
+    public Result<Boolean> likePost(@PathVariable Long postId, @PathVariable Long userId) {
         boolean success = postLikeService.likePost(postId, userId);
-        return success ? Result.success(true) : Result.error("已经点赞过该帖子");
+        if (success) {
+            return Result.success(true);
+        } else {
+            return Result.error("您已经点赞过该帖子");
+        }
     }
 
-    @DeleteMapping("/{postId}")
-    public Result<Boolean> unlikePost(@PathVariable Long postId, @RequestParam Long userId) {
+    /**
+     * 取消点赞帖子
+     *
+     * @param postId 帖子ID
+     * @param userId 用户ID
+     * @return 取消点赞结果
+     */
+    @DeleteMapping("/{postId}/users/{userId}")
+    public Result<Boolean> unlikePost(@PathVariable Long postId, @PathVariable Long userId) {
         boolean success = postLikeService.unlikePost(postId, userId);
-        return success ? Result.success(true) : Result.error("未点赞该帖子");
+        if (success) {
+            return Result.success(true);
+        } else {
+            return Result.error("您还没有点赞该帖子");
+        }
     }
 
-    @GetMapping("/{postId}/status")
-    public Result<Boolean> hasLiked(@PathVariable Long postId, @RequestParam Long userId) {
+    /**
+     * 检查用户是否已点赞帖子
+     *
+     * @param postId 帖子ID
+     * @param userId 用户ID
+     * @return 是否已点赞
+     */
+    @GetMapping("/{postId}/users/{userId}/status")
+    public Result<Boolean> checkLikeStatus(@PathVariable Long postId, @PathVariable Long userId) {
         boolean hasLiked = postLikeService.hasLiked(postId, userId);
         return Result.success(hasLiked);
     }
 
+    /**
+     * 获取帖子点赞数
+     *
+     * @param postId 帖子ID
+     * @return 点赞数
+     */
     @GetMapping("/{postId}/count")
     public Result<Long> getLikeCount(@PathVariable Long postId) {
         Long count = postLikeService.getLikeCount(postId);

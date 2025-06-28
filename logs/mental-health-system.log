@@ -1,0 +1,188 @@
+2025-06-28 12:41:53.749 [main] INFO  c.cupk.MentalHealthSystemApplication - Starting MentalHealthSystemApplication using Java 21.0.7 with PID 26116 (D:\WorkSpace2025\work\WebStudy\mental_health_system\target\classes started by 20428 in D:\WorkSpace2025\work\WebStudy)
+2025-06-28 12:41:53.752 [main] DEBUG c.cupk.MentalHealthSystemApplication - Running with Spring Boot v3.1.0, Spring v6.0.9
+2025-06-28 12:41:53.753 [main] INFO  c.cupk.MentalHealthSystemApplication - No active profile set, falling back to 1 default profile: "default"
+2025-06-28 12:41:54.074 [main] WARN  o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.BeanDefinitionStoreException: Failed to parse configuration class [com.cupk.MentalHealthSystemApplication]
+2025-06-28 12:41:54.118 [main] ERROR o.s.boot.SpringApplication - Application run failed
+org.springframework.beans.factory.BeanDefinitionStoreException: Failed to parse configuration class [com.cupk.MentalHealthSystemApplication]
+	at org.springframework.context.annotation.ConfigurationClassParser.parse(ConfigurationClassParser.java:178)
+	at org.springframework.context.annotation.ConfigurationClassPostProcessor.processConfigBeanDefinitions(ConfigurationClassPostProcessor.java:415)
+	at org.springframework.context.annotation.ConfigurationClassPostProcessor.postProcessBeanDefinitionRegistry(ConfigurationClassPostProcessor.java:287)
+	at org.springframework.context.support.PostProcessorRegistrationDelegate.invokeBeanDefinitionRegistryPostProcessors(PostProcessorRegistrationDelegate.java:344)
+	at org.springframework.context.support.PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(PostProcessorRegistrationDelegate.java:115)
+	at org.springframework.context.support.AbstractApplicationContext.invokeBeanFactoryPostProcessors(AbstractApplicationContext.java:771)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:589)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:733)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:435)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:311)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1305)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1294)
+	at com.cupk.MentalHealthSystemApplication.main(MentalHealthSystemApplication.java:14)
+Caused by: java.io.FileNotFoundException: class path resource [com/cupk/client/DeepSeekClient.class] cannot be opened because it does not exist
+	at org.springframework.core.io.ClassPathResource.getInputStream(ClassPathResource.java:211)
+	at org.springframework.core.type.classreading.SimpleMetadataReader.getClassReader(SimpleMetadataReader.java:54)
+	at org.springframework.core.type.classreading.SimpleMetadataReader.<init>(SimpleMetadataReader.java:48)
+	at org.springframework.core.type.classreading.SimpleMetadataReaderFactory.getMetadataReader(SimpleMetadataReaderFactory.java:103)
+	at org.springframework.boot.type.classreading.ConcurrentReferenceCachingMetadataReaderFactory.createMetadataReader(ConcurrentReferenceCachingMetadataReaderFactory.java:86)
+	at org.springframework.boot.type.classreading.ConcurrentReferenceCachingMetadataReaderFactory.getMetadataReader(ConcurrentReferenceCachingMetadataReaderFactory.java:73)
+	at org.springframework.core.type.classreading.SimpleMetadataReaderFactory.getMetadataReader(SimpleMetadataReaderFactory.java:81)
+	at org.springframework.context.annotation.ConfigurationClassParser.parse(ConfigurationClassParser.java:187)
+	at org.springframework.context.annotation.ConfigurationClassParser.doProcessConfigurationClass(ConfigurationClassParser.java:297)
+	at org.springframework.context.annotation.ConfigurationClassParser.processConfigurationClass(ConfigurationClassParser.java:243)
+	at org.springframework.context.annotation.ConfigurationClassParser.parse(ConfigurationClassParser.java:196)
+	at org.springframework.context.annotation.ConfigurationClassParser.parse(ConfigurationClassParser.java:164)
+	... 13 common frames omitted
+2025-06-28 12:42:13.618 [main] INFO  c.cupk.MentalHealthSystemApplication - Starting MentalHealthSystemApplication using Java 21.0.7 with PID 21988 (D:\WorkSpace2025\work\WebStudy\mental_health_system\target\classes started by 20428 in D:\WorkSpace2025\work\WebStudy)
+2025-06-28 12:42:13.621 [main] DEBUG c.cupk.MentalHealthSystemApplication - Running with Spring Boot v3.1.0, Spring v6.0.9
+2025-06-28 12:42:13.622 [main] INFO  c.cupk.MentalHealthSystemApplication - No active profile set, falling back to 1 default profile: "default"
+2025-06-28 12:42:15.122 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8080 (http)
+2025-06-28 12:42:15.134 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2025-06-28 12:42:15.135 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-06-28 12:42:15.136 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.8]
+2025-06-28 12:42:15.254 [main] INFO  o.a.c.c.C.[.[localhost].[/mental] - Initializing Spring embedded WebApplicationContext
+2025-06-28 12:42:15.255 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1574 ms
+2025-06-28 12:42:16.039 [main] WARN  o.s.b.a.s.s.UserDetailsServiceAutoConfiguration - 
+
+Using generated security password: b6c83c6a-dcc1-4afc-9b3e-d8b2964b3501
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2025-06-28 12:42:16.431 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 1 endpoint(s) beneath base path '/actuator'
+2025-06-28 12:42:16.481 [main] INFO  o.s.s.web.DefaultSecurityFilterChain - Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@147c00aa, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@1c90029b, org.springframework.security.web.context.SecurityContextHolderFilter@28fa541, org.springframework.security.web.header.HeaderWriterFilter@57b1ec84, org.springframework.security.web.authentication.logout.LogoutFilter@550fa96f, org.springframework.security.web.authentication.www.BasicAuthenticationFilter@194224ca, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@4aab7195, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@43d3995f, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@4db728df, org.springframework.security.web.access.ExceptionTranslationFilter@1de85972, org.springframework.security.web.access.intercept.AuthorizationFilter@6851b296]
+2025-06-28 12:42:16.822 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2025-06-28 12:42:16.870 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8080 (http) with context path '/mental'
+2025-06-28 12:42:16.883 [main] INFO  c.cupk.MentalHealthSystemApplication - Started MentalHealthSystemApplication in 3.782 seconds (process running for 4.3)
+2025-06-28 12:42:19.404 [RMI TCP Connection(2)-127.0.0.1] INFO  o.a.c.c.C.[.[localhost].[/mental] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-06-28 12:42:19.404 [RMI TCP Connection(2)-127.0.0.1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-06-28 12:42:19.406 [RMI TCP Connection(2)-127.0.0.1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
+2025-06-28 12:43:07.728 [http-nio-8080-exec-1] INFO  c.cupk.controller.CommentController - 收到获取评论回复列表请求: commentId=1
+2025-06-28 12:43:07.731 [http-nio-8080-exec-1] INFO  c.c.service.impl.CommentServiceImpl - 获取评论回复列表: parentId=1
+2025-06-28 12:43:07.826 [http-nio-8080-exec-1] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-06-28 12:43:08.001 [http-nio-8080-exec-1] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@7aef2265
+2025-06-28 12:43:08.005 [http-nio-8080-exec-1] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-06-28 12:43:08.084 [http-nio-8080-exec-1] INFO  c.c.service.impl.CommentServiceImpl - 获取到1条回复, SQL: WHERE (parent_id = #{ew.paramNameValuePairs.MPGENVAL1} AND status = #{ew.paramNameValuePairs.MPGENVAL2}) ORDER BY create_time ASC
+2025-06-28 12:43:08.084 [http-nio-8080-exec-1] INFO  c.cupk.controller.CommentController - 获取到1条回复
+2025-06-28 12:46:27.417 [main] INFO  c.cupk.MentalHealthSystemApplication - Starting MentalHealthSystemApplication using Java 21.0.7 with PID 29536 (D:\WorkSpace2025\work\WebStudy\mental_health_system\target\classes started by 20428 in D:\WorkSpace2025\work\WebStudy)
+2025-06-28 12:46:27.420 [main] DEBUG c.cupk.MentalHealthSystemApplication - Running with Spring Boot v3.1.0, Spring v6.0.9
+2025-06-28 12:46:27.421 [main] INFO  c.cupk.MentalHealthSystemApplication - No active profile set, falling back to 1 default profile: "default"
+2025-06-28 12:46:29.032 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8080 (http)
+2025-06-28 12:46:29.044 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2025-06-28 12:46:29.045 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-06-28 12:46:29.046 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.8]
+2025-06-28 12:46:29.153 [main] INFO  o.a.c.c.C.[.[localhost].[/mental] - Initializing Spring embedded WebApplicationContext
+2025-06-28 12:46:29.153 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1676 ms
+2025-06-28 12:46:29.930 [main] WARN  o.s.b.a.s.s.UserDetailsServiceAutoConfiguration - 
+
+Using generated security password: 00b57ae4-ca9e-40d5-b8ee-e99edcd92cd6
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2025-06-28 12:46:30.372 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 1 endpoint(s) beneath base path '/actuator'
+2025-06-28 12:46:30.416 [main] INFO  o.s.s.web.DefaultSecurityFilterChain - Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@761f234c, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@687b0ddc, org.springframework.security.web.context.SecurityContextHolderFilter@5c4714ef, org.springframework.security.web.header.HeaderWriterFilter@1a89414e, org.springframework.security.web.authentication.logout.LogoutFilter@5f7cd50e, org.springframework.security.web.authentication.www.BasicAuthenticationFilter@6a6e9289, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@71fb8301, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@1c4057f9, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@42b4df5a, org.springframework.security.web.access.ExceptionTranslationFilter@68a5aadd, org.springframework.security.web.access.intercept.AuthorizationFilter@20890a1a]
+2025-06-28 12:46:30.758 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2025-06-28 12:46:30.779 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8080 (http) with context path '/mental'
+2025-06-28 12:46:30.794 [main] INFO  c.cupk.MentalHealthSystemApplication - Started MentalHealthSystemApplication in 3.913 seconds (process running for 4.574)
+2025-06-28 12:46:33.106 [RMI TCP Connection(2)-127.0.0.1] INFO  o.a.c.c.C.[.[localhost].[/mental] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-06-28 12:46:33.107 [RMI TCP Connection(2)-127.0.0.1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-06-28 12:46:33.109 [RMI TCP Connection(2)-127.0.0.1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
+2025-06-28 12:46:38.983 [http-nio-8080-exec-3] INFO  com.cupk.controller.TestController - 测试日志中文: 测试中文输出
+2025-06-28 12:48:08.360 [main] INFO  c.cupk.MentalHealthSystemApplication - Starting MentalHealthSystemApplication using Java 21.0.7 with PID 25184 (D:\WorkSpace2025\work\WebStudy\mental_health_system\target\classes started by 20428 in D:\WorkSpace2025\work\WebStudy)
+2025-06-28 12:48:08.364 [main] DEBUG c.cupk.MentalHealthSystemApplication - Running with Spring Boot v3.1.0, Spring v6.0.9
+2025-06-28 12:48:08.365 [main] INFO  c.cupk.MentalHealthSystemApplication - No active profile set, falling back to 1 default profile: "default"
+2025-06-28 12:48:09.850 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8080 (http)
+2025-06-28 12:48:09.861 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2025-06-28 12:48:09.862 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-06-28 12:48:09.863 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.8]
+2025-06-28 12:48:09.956 [main] INFO  o.a.c.c.C.[.[localhost].[/mental] - Initializing Spring embedded WebApplicationContext
+2025-06-28 12:48:09.957 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1527 ms
+2025-06-28 12:48:10.800 [main] WARN  o.s.b.a.s.s.UserDetailsServiceAutoConfiguration - 
+
+Using generated security password: 1e7da613-6ff9-4c39-b34f-15fc78db95be
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2025-06-28 12:48:11.179 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 1 endpoint(s) beneath base path '/actuator'
+2025-06-28 12:48:11.223 [main] INFO  o.s.s.web.DefaultSecurityFilterChain - Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@1857fe6c, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@44976b08, org.springframework.security.web.context.SecurityContextHolderFilter@685e6a68, org.springframework.security.web.header.HeaderWriterFilter@79b7c350, org.springframework.security.web.authentication.logout.LogoutFilter@22aefae0, org.springframework.security.web.authentication.www.BasicAuthenticationFilter@214fba74, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@4e8d9bb6, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@ff5d4f1, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@29b8df5, org.springframework.security.web.access.ExceptionTranslationFilter@5368e981, org.springframework.security.web.access.intercept.AuthorizationFilter@16a09809]
+2025-06-28 12:48:11.553 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2025-06-28 12:48:11.579 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8080 (http) with context path '/mental'
+2025-06-28 12:48:11.595 [main] INFO  c.cupk.MentalHealthSystemApplication - Started MentalHealthSystemApplication in 3.763 seconds (process running for 4.287)
+2025-06-28 12:48:14.108 [RMI TCP Connection(2)-127.0.0.1] INFO  o.a.c.c.C.[.[localhost].[/mental] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-06-28 12:48:14.108 [RMI TCP Connection(2)-127.0.0.1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-06-28 12:48:14.109 [RMI TCP Connection(2)-127.0.0.1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
+2025-06-28 12:48:28.938 [main] INFO  c.cupk.MentalHealthSystemApplication - Starting MentalHealthSystemApplication using Java 21.0.7 with PID 22152 (D:\WorkSpace2025\work\WebStudy\mental_health_system\target\classes started by 20428 in D:\WorkSpace2025\work\WebStudy)
+2025-06-28 12:48:28.941 [main] DEBUG c.cupk.MentalHealthSystemApplication - Running with Spring Boot v3.1.0, Spring v6.0.9
+2025-06-28 12:48:28.942 [main] INFO  c.cupk.MentalHealthSystemApplication - No active profile set, falling back to 1 default profile: "default"
+2025-06-28 12:48:30.354 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8080 (http)
+2025-06-28 12:48:30.366 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2025-06-28 12:48:30.368 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-06-28 12:48:30.368 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.8]
+2025-06-28 12:48:30.475 [main] INFO  o.a.c.c.C.[.[localhost].[/mental] - Initializing Spring embedded WebApplicationContext
+2025-06-28 12:48:30.476 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1478 ms
+2025-06-28 12:48:31.251 [main] WARN  o.s.b.a.s.s.UserDetailsServiceAutoConfiguration - 
+
+Using generated security password: 103eb931-f164-489b-a4b1-b89ce87b0f6b
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2025-06-28 12:48:31.615 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 1 endpoint(s) beneath base path '/actuator'
+2025-06-28 12:48:31.660 [main] INFO  o.s.s.web.DefaultSecurityFilterChain - Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@6a6e9289, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@ff4b223, org.springframework.security.web.context.SecurityContextHolderFilter@1a89414e, org.springframework.security.web.header.HeaderWriterFilter@74bdfa0b, org.springframework.security.web.authentication.logout.LogoutFilter@749d7c01, org.springframework.security.web.authentication.www.BasicAuthenticationFilter@362a6aa5, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@44492c06, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@7cdfa824, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@61554b6b, org.springframework.security.web.access.ExceptionTranslationFilter@4db728df, org.springframework.security.web.access.intercept.AuthorizationFilter@1857fe6c]
+2025-06-28 12:48:31.959 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2025-06-28 12:48:31.980 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8080 (http) with context path '/mental'
+2025-06-28 12:48:31.995 [main] INFO  c.cupk.MentalHealthSystemApplication - Started MentalHealthSystemApplication in 3.568 seconds (process running for 4.081)
+2025-06-28 12:48:34.721 [RMI TCP Connection(2)-127.0.0.1] INFO  o.a.c.c.C.[.[localhost].[/mental] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-06-28 12:48:34.722 [RMI TCP Connection(2)-127.0.0.1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-06-28 12:48:34.724 [RMI TCP Connection(2)-127.0.0.1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 2 ms
+2025-06-28 12:49:30.902 [main] INFO  c.cupk.MentalHealthSystemApplication - Starting MentalHealthSystemApplication using Java 21.0.7 with PID 17692 (D:\WorkSpace2025\work\WebStudy\mental_health_system\target\classes started by 20428 in D:\WorkSpace2025\work\WebStudy)
+2025-06-28 12:49:30.904 [main] DEBUG c.cupk.MentalHealthSystemApplication - Running with Spring Boot v3.1.0, Spring v6.0.9
+2025-06-28 12:49:30.905 [main] INFO  c.cupk.MentalHealthSystemApplication - No active profile set, falling back to 1 default profile: "default"
+2025-06-28 12:49:32.411 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8080 (http)
+2025-06-28 12:49:32.423 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2025-06-28 12:49:32.424 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-06-28 12:49:32.425 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.8]
+2025-06-28 12:49:32.523 [main] INFO  o.a.c.c.C.[.[localhost].[/mental] - Initializing Spring embedded WebApplicationContext
+2025-06-28 12:49:32.524 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1561 ms
+2025-06-28 12:49:33.288 [main] WARN  o.s.b.a.s.s.UserDetailsServiceAutoConfiguration - 
+
+Using generated security password: 1ca64097-4bca-44df-957b-b25fbd97634c
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2025-06-28 12:49:33.662 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 1 endpoint(s) beneath base path '/actuator'
+2025-06-28 12:49:33.705 [main] INFO  o.s.s.web.DefaultSecurityFilterChain - Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@6a6e9289, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@ff4b223, org.springframework.security.web.context.SecurityContextHolderFilter@1a89414e, org.springframework.security.web.header.HeaderWriterFilter@74bdfa0b, org.springframework.security.web.authentication.logout.LogoutFilter@749d7c01, org.springframework.security.web.authentication.www.BasicAuthenticationFilter@362a6aa5, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@44492c06, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@7cdfa824, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@61554b6b, org.springframework.security.web.access.ExceptionTranslationFilter@4db728df, org.springframework.security.web.access.intercept.AuthorizationFilter@1857fe6c]
+2025-06-28 12:49:34.047 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2025-06-28 12:49:34.069 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8080 (http) with context path '/mental'
+2025-06-28 12:49:34.084 [main] INFO  c.cupk.MentalHealthSystemApplication - Started MentalHealthSystemApplication in 3.709 seconds (process running for 4.316)
+2025-06-28 12:49:36.646 [RMI TCP Connection(2)-127.0.0.1] INFO  o.a.c.c.C.[.[localhost].[/mental] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-06-28 12:49:36.648 [RMI TCP Connection(2)-127.0.0.1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-06-28 12:49:36.651 [RMI TCP Connection(2)-127.0.0.1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
+2025-06-28 12:49:37.471 [http-nio-8080-exec-1] INFO  com.cupk.controller.TestController - 测试日志中文: 测试中文输出
+2025-06-28 12:50:49.003 [main] INFO  c.cupk.MentalHealthSystemApplication - Starting MentalHealthSystemApplication using Java 21.0.7 with PID 23588 (D:\WorkSpace2025\work\WebStudy\mental_health_system\target\classes started by 20428 in D:\WorkSpace2025\work\WebStudy)
+2025-06-28 12:50:49.005 [main] DEBUG c.cupk.MentalHealthSystemApplication - Running with Spring Boot v3.1.0, Spring v6.0.9
+2025-06-28 12:50:49.006 [main] INFO  c.cupk.MentalHealthSystemApplication - No active profile set, falling back to 1 default profile: "default"
+2025-06-28 12:50:50.398 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8080 (http)
+2025-06-28 12:50:50.408 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2025-06-28 12:50:50.410 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-06-28 12:50:50.411 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.8]
+2025-06-28 12:50:50.508 [main] INFO  o.a.c.c.C.[.[localhost].[/mental] - Initializing Spring embedded WebApplicationContext
+2025-06-28 12:50:50.509 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1440 ms
+2025-06-28 12:50:51.328 [main] WARN  o.s.b.a.s.s.UserDetailsServiceAutoConfiguration - 
+
+Using generated security password: 7b82e587-ad9c-49bf-80b4-13a909c56930
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2025-06-28 12:50:51.714 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 1 endpoint(s) beneath base path '/actuator'
+2025-06-28 12:50:51.756 [main] INFO  o.s.s.web.DefaultSecurityFilterChain - Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@aa0dbca, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@794cb26b, org.springframework.security.web.context.SecurityContextHolderFilter@1ba35152, org.springframework.security.web.header.HeaderWriterFilter@28ce75ec, org.springframework.security.web.authentication.logout.LogoutFilter@1c2096c6, org.springframework.security.web.authentication.www.BasicAuthenticationFilter@48277712, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@3ff8a3ad, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@271e851e, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@5b7ee56c, org.springframework.security.web.access.ExceptionTranslationFilter@5e541ef9, org.springframework.security.web.access.intercept.AuthorizationFilter@65d7eea4]
+2025-06-28 12:50:52.100 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2025-06-28 12:50:52.131 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8080 (http) with context path '/mental'
+2025-06-28 12:50:52.145 [main] INFO  c.cupk.MentalHealthSystemApplication - Started MentalHealthSystemApplication in 3.688 seconds (process running for 4.255)
+2025-06-28 12:50:54.733 [RMI TCP Connection(2)-127.0.0.1] INFO  o.a.c.c.C.[.[localhost].[/mental] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-06-28 12:50:54.734 [RMI TCP Connection(2)-127.0.0.1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2025-06-28 12:50:54.737 [RMI TCP Connection(2)-127.0.0.1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
+2025-06-28 12:51:06.845 [http-nio-8080-exec-1] INFO  c.cupk.controller.CommentController - 收到获取评论回复列表请求: commentId=1
+2025-06-28 12:51:06.847 [http-nio-8080-exec-1] INFO  c.c.service.impl.CommentServiceImpl - 获取评论回复列表: parentId=1
+2025-06-28 12:51:06.937 [http-nio-8080-exec-1] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-06-28 12:51:07.130 [http-nio-8080-exec-1] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@7d16d60f
+2025-06-28 12:51:07.138 [http-nio-8080-exec-1] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-06-28 12:51:07.239 [http-nio-8080-exec-1] INFO  c.c.service.impl.CommentServiceImpl - 获取到1条回复, SQL: WHERE (parent_id = #{ew.paramNameValuePairs.MPGENVAL1} AND status = #{ew.paramNameValuePairs.MPGENVAL2}) ORDER BY create_time ASC
+2025-06-28 12:51:07.240 [http-nio-8080-exec-1] INFO  c.cupk.controller.CommentController - 获取到1条回复
