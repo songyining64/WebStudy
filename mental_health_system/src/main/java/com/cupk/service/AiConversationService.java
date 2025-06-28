@@ -8,5 +8,6 @@ public interface AiConversationService extends IService<AiConversation> {
     /**
      * 与 AI 对话，获取返回结果
      */
-    String chat(String userMessage);
+    String chat(String sessionId, String userMessage, Long userId);
+
 }
