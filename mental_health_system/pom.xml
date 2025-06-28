@@ -75,6 +75,11 @@
             <artifactId>mybatis-plus-extension</artifactId>
             <version>3.5.5</version>
         </dependency>
+        <!-- Spring Boot Mail 依赖 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

@@ -12,6 +12,20 @@ spring:
     date-format: yyyy-MM-dd
     time-zone: GMT+8
 
+
+  mail:
+    host: smtp.qq.com
+    username: 2042837972@qq.com
+    password: onqnaetsocliccjc
+    port: 465
+    protocol: smtps
+    properties:
+      mail:
+        smtp:
+          ssl:
+            enable: true
+
+
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

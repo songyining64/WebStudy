@@ -13,4 +13,8 @@ public interface UserService extends IService<User> {
     User findByUsername(String username);
 
     User findByEmail(String email);
+
+    void resetPassword(String email, String newPassword);
+
+    User getByEmail(String email);
 }
