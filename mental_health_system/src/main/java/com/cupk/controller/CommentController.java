@@ -2,6 +2,7 @@ package com.cupk.controller;
 
 import com.cupk.entity.Comment;
 import com.cupk.service.CommentService;
+import com.cupk.service.CommentLikeService;
 import com.cupk.service.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,9 +17,11 @@ public class CommentController {
     private static final Logger logger = LoggerFactory.getLogger(CommentController.class);
 
     private final CommentService commentService;
+    private final CommentLikeService commentLikeService;
 
-    public CommentController(CommentService commentService) {
+    public CommentController(CommentService commentService, CommentLikeService commentLikeService) {
         this.commentService = commentService;
+        this.commentLikeService = commentLikeService;
     }
 
     /**
@@ -101,5 +104,33 @@ public class CommentController {
             logger.error("测试接口发生错误", e);
             return Result.error("测试失败: " + e.getMessage());
         }
+    }
+
+    // 点赞评论
+    @PostMapping("/{commentId}/like/users/{userId}")
+    public Result<Boolean> likeComment(@PathVariable Long commentId, @PathVariable Long userId) {
+        boolean success = commentLikeService.likeComment(commentId, userId);
+        return success ? Result.success(true) : Result.error("已点赞或评论不存在");
+    }
+
+    // 取消点赞
+    @DeleteMapping("/{commentId}/like/users/{userId}")
+    public Result<Boolean> unlikeComment(@PathVariable Long commentId, @PathVariable Long userId) {
+        boolean success = commentLikeService.unlikeComment(commentId, userId);
+        return success ? Result.success(true) : Result.error("未点赞或评论不存在");
+    }
+
+    // 查询点赞状态
+    @GetMapping("/{commentId}/like/users/{userId}/status")
+    public Result<Boolean> hasLiked(@PathVariable Long commentId, @PathVariable Long userId) {
+        boolean liked = commentLikeService.hasLiked(commentId, userId);
+        return Result.success(liked);
+    }
+
+    // 获取评论点赞数
+    @GetMapping("/{commentId}/like/count")
+    public Result<Long> getLikeCount(@PathVariable Long commentId) {
+        Long count = commentLikeService.getLikeCount(commentId);
+        return Result.success(count);
     }
 }
