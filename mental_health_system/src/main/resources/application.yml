@@ -12,7 +12,6 @@ spring:
     date-format: yyyy-MM-dd
     time-zone: GMT+8
 
-
   mail:
     host: smtp.qq.com
     username: 2042837972@qq.com
@@ -24,7 +23,6 @@ spring:
         smtp:
           ssl:
             enable: true
-
 
 mybatis-plus:
   configuration:
