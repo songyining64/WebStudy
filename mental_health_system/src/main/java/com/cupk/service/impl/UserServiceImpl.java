@@ -7,6 +7,7 @@ import com.cupk.dto.UserLoginDTO;
 import com.cupk.entity.User;
 import com.cupk.mapper.UserMapper;
 import com.cupk.service.UserService;
+import com.cupk.util.PasswordValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
@@ -16,6 +17,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Autowired
     private UserMapper userMapper;
 
+    @Autowired
+    private PasswordValidator passwordValidator;
+
     @Override
     public void register(UserRegisterDTO dto) {
         if (userMapper.selectByUsername(dto.getUsername()) != null) {
@@ -24,6 +28,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (userMapper.selectByEmail(dto.getEmail()) != null) {
             throw new RuntimeException("邮箱已注册");
         }
+
+        // 验证密码格式
+        if (!passwordValidator.isValid(dto.getPassword())) {
+            throw new RuntimeException(passwordValidator.getPasswordRequirements());
+        }
+
         User user = new User();
         user.setUsername(dto.getUsername());
         user.setPassword(dto.getPassword()); // 直接使用明文密码
@@ -36,8 +46,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public String login(UserLoginDTO dto) {
         User user = userMapper.selectByUsername(dto.getUsername());
-        if (user == null || !dto.getPassword().equals(user.getPassword())) { // 直接比较明文密码
-            throw new RuntimeException("用户名或密码错误");
+        if (user == null) {
+            throw new RuntimeException("用户未注册，请先注册");
+        }
+        if (!dto.getPassword().equals(user.getPassword())) { // 直接比较明文密码
+            throw new RuntimeException("密码错误");
         }
         // 这里应集成JWT生成token，暂时返回用户名作为token占位
         return user.getUsername();
@@ -55,6 +68,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public void resetPassword(String email, String newPassword) {
+        // 验证密码格式
+        if (!passwordValidator.isValid(newPassword)) {
+            throw new RuntimeException(passwordValidator.getPasswordRequirements());
+        }
+
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(User::getEmail, email);
         User user = this.getOne(wrapper);
