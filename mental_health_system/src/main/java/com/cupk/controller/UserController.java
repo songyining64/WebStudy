@@ -50,14 +50,22 @@ public class UserController {
 
     @PostMapping("/register")
     public Result<?> register(@RequestBody UserRegisterDTO dto) {
-        userService.register(dto);
-        return Result.success();
+        try {
+            userService.register(dto);
+            return Result.success();
+        } catch (RuntimeException e) {
+            return Result.error(e.getMessage());
+        }
     }
 
     @PostMapping("/login")
     public Result<String> login(@RequestBody UserLoginDTO dto) {
-        String token = userService.login(dto);
-        return Result.success(token);
+        try {
+            String token = userService.login(dto);
+            return Result.success(token);
+        } catch (RuntimeException e) {
+            return Result.error(e.getMessage());
+        }
     }
 
     @PostMapping("/forgot-password/code")
@@ -80,7 +88,11 @@ public class UserController {
         if (!passwordResetService.verifyCode(email, code)) {
             return Result.error("验证码错误或已过期");
         }
-        userService.resetPassword(email, newPassword);
-        return Result.success("密码重置成功");
+        try {
+            userService.resetPassword(email, newPassword);
+            return Result.success("密码重置成功");
+        } catch (RuntimeException e) {
+            return Result.error(e.getMessage());
+        }
     }
 }
