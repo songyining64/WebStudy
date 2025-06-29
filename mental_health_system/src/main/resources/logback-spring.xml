@@ -10,16 +10,15 @@
     </appender>
 
     <!-- 文件输出 -->
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <!-- 添加file属性，指定日志文件路径 -->
         <file>logs/mental-health-system.log</file>
-        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+        <!-- 是否追加到文件末尾 -->
+        <append>true</append>
+        <encoder>
             <charset>UTF-8</charset>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/mental-health-system.%d{yyyy-MM-dd}.log</fileNamePattern>
-            <maxHistory>30</maxHistory>
-        </rollingPolicy>
     </appender>
 
     <!-- 日志级别 -->
@@ -30,4 +29,8 @@
 
     <!-- 自定义日志级别 -->
     <logger name="com.cupk" level="DEBUG" />
+    
+    <!-- 将Spring的日志级别调整为WARN，减少无用日志输出 -->
+    <logger name="org.springframework" level="WARN" />
+    <logger name="org.hibernate" level="WARN" />
 </configuration> 

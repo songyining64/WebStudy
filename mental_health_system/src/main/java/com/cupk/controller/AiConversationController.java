@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 import java.util.UUID;
 
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/ai")
 public class AiConversationController {
@@ -36,18 +37,16 @@ public class AiConversationController {
         return Result.success(aiReply);
     }
 
-
     @GetMapping("/history")
     public Result<IPage<AiConversation>> getHistory(
-        @RequestParam Long userId,
-        @RequestParam String sessionId,
-        @RequestParam(defaultValue = "1") int page,
-        @RequestParam(defaultValue = "10") int size
-        ) {
+            @RequestParam Long userId,
+            @RequestParam String sessionId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
         LambdaQueryWrapper<AiConversation> query = new LambdaQueryWrapper<AiConversation>()
-            .eq(AiConversation::getUserId, userId)
-            .eq(AiConversation::getSessionId, sessionId)
-            .orderByAsc(AiConversation::getCreatedAt);
+                .eq(AiConversation::getUserId, userId)
+                .eq(AiConversation::getSessionId, sessionId)
+                .orderByAsc(AiConversation::getCreatedAt);
 
         IPage<AiConversation> result = aiService.page(new Page<>(page, size), query);
         return Result.success(result);

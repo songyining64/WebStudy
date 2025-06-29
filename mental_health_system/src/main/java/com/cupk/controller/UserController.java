@@ -9,6 +9,7 @@ import com.cupk.service.PasswordResetService;
 import com.cupk.service.MailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -59,10 +60,19 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public Result<String> login(@RequestBody UserLoginDTO dto) {
+    public Result<Map<String, Object>> login(@RequestBody UserLoginDTO dto) {
         try {
             String token = userService.login(dto);
-            return Result.success(token);
+            // 获取用户信息
+            User user = userService.findByUsername(dto.getUsername());
+            // 封装返回数据
+            Map<String, Object> data = new HashMap<>();
+            data.put("token", token);
+            data.put("userId", user.getId());
+            data.put("username", user.getUsername());
+            data.put("role", user.getRole());
+            data.put("avatar", user.getAvatar());
+            return Result.success("登录成功", data);
         } catch (RuntimeException e) {
             return Result.error(e.getMessage());
         }
@@ -70,14 +80,23 @@ public class UserController {
 
     @PostMapping("/forgot-password/code")
     public Result<?> sendResetCode(@RequestBody Map<String, String> body) {
-        String email = body.get("email");
-        User user = userService.getByEmail(email);
-        if (user == null)
-            return Result.error("邮箱未注册");
-        String code = String.valueOf((int) ((Math.random() * 9 + 1) * 100000));
-        passwordResetService.saveCode(email, code);
-        mailService.send(email, "重置密码验证码", "您的验证码是：" + code);
-        return Result.success("验证码已发送");
+        try {
+            String email = body.get("email");
+            if (email == null || email.trim().isEmpty()) {
+                return Result.error("邮箱不能为空");
+            }
+
+            User user = userService.getByEmail(email);
+            if (user == null)
+                return Result.error("邮箱未注册");
+
+            String code = String.valueOf((int) ((Math.random() * 9 + 1) * 100000));
+            passwordResetService.saveCode(email, code);
+            mailService.send(email, "重置密码验证码", "您的验证码是：" + code);
+            return Result.success("验证码已发送");
+        } catch (Exception e) {
+            return Result.error("发送验证码失败：" + e.getMessage());
+        }
     }
 
     @PostMapping("/forgot-password/reset")
