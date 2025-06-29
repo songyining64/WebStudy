@@ -3,8 +3,10 @@ package com.cupk.service.impl;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cupk.client.DeepSeekClient;
 import com.cupk.entity.AiConversation;
+import com.cupk.entity.UserAssessment;
 import com.cupk.mapper.AiConversationMapper;
 import com.cupk.service.AiConversationService;
+import com.cupk.service.UserAssessmentService;
 import com.cupk.util.PromptLoader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,9 @@ public class AiConversationServiceImpl
     @Autowired
     private AiConversationMapper conversationMapper;
 
+    @Autowired
+    private UserAssessmentService assessmentService;
+
     private static final String PROMPT = PromptLoader.load("prompt/deepseek-persona.txt");
 
     @Override
@@ -36,11 +41,22 @@ public class AiConversationServiceImpl
                         .eq(AiConversation::getUserId, userId)
                         .count() == 0;
 
-                    if (isFirstMessage) {
-                        messages.add(new DeepSeekClient.Message("system", PROMPT));
-                }
+        UserAssessment assessment = assessmentService.lambdaQuery()
+                .eq(UserAssessment::getUserId, userId)
+                .orderByDesc(UserAssessment::getId)
+                .last("LIMIT 1")
+                .one();
 
-                messages.add(new DeepSeekClient.Message("user", userMessage));
+        String assessmentContext = assessment != null ?
+            "\n用户心理评估背景:\n" + assessment.getReport() : "";
+
+        String fullPrompt = PROMPT + assessmentContext;
+
+        if (isFirstMessage) {
+            messages.add(new DeepSeekClient.Message("system", fullPrompt));
+        }
+
+        messages.add(new DeepSeekClient.Message("user", userMessage));
 
                 String rawResponse = deepSeekClient.ask(messages);
                 String emotionJson = extractEmotionJson(rawResponse);
@@ -57,22 +73,17 @@ public class AiConversationServiceImpl
                 return rawResponse;
         }
 
-
-
-    /**
-     * 提取 AI 回复中的 JSON 情绪分析部分（🌡️{...}）
-     */
     private String extractEmotionJson(String aiResponse) {
         if (aiResponse == null) return null;
 
-        // 使用正则提取 🌡️ 开头 + JSON 格式字符串
         Pattern pattern = Pattern.compile("🌡️\\s*(\\{.*?})", Pattern.DOTALL);
         Matcher matcher = pattern.matcher(aiResponse);
 
         if (matcher.find()) {
-            return matcher.group(1); // 仅返回 {...}
+            return matcher.group(1);
         }
 
         return null;
     }
 }
+
