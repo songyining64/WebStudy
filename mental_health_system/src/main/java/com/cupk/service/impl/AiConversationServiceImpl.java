@@ -5,6 +5,7 @@ import com.cupk.client.DeepSeekClient;
 import com.cupk.entity.AiConversation;
 import com.cupk.entity.UserAssessment;
 import com.cupk.mapper.AiConversationMapper;
+import com.cupk.mapper.UserMapper;
 import com.cupk.service.AiConversationService;
 import com.cupk.service.UserAssessmentService;
 import com.cupk.util.PromptLoader;
@@ -30,16 +31,24 @@ public class AiConversationServiceImpl
     @Autowired
     private UserAssessmentService assessmentService;
 
+    @Autowired
+    private UserMapper userMapper;
+
     private static final String PROMPT = PromptLoader.load("prompt/deepseek-persona.txt");
 
     @Override
-        public String chat(String sessionId, String userMessage, Long userId) {
-                List<DeepSeekClient.Message> messages = new ArrayList<>();
+    public String chat(String sessionId, String userMessage, Long userId) {
+        // 校验 userId 是否存在
+        if (userMapper.selectById(userId) == null) {
+            throw new RuntimeException("用户不存在");
+        }
 
-                boolean isFirstMessage = lambdaQuery()
-                        .eq(AiConversation::getSessionId, sessionId)
-                        .eq(AiConversation::getUserId, userId)
-                        .count() == 0;
+        List<DeepSeekClient.Message> messages = new ArrayList<>();
+
+        boolean isFirstMessage = lambdaQuery()
+                .eq(AiConversation::getSessionId, sessionId)
+                .eq(AiConversation::getUserId, userId)
+                .count() == 0;
 
         UserAssessment assessment = assessmentService.lambdaQuery()
                 .eq(UserAssessment::getUserId, userId)
@@ -58,20 +67,20 @@ public class AiConversationServiceImpl
 
         messages.add(new DeepSeekClient.Message("user", userMessage));
 
-                String rawResponse = deepSeekClient.ask(messages);
-                String emotionJson = extractEmotionJson(rawResponse);
+        String rawResponse = deepSeekClient.ask(messages);
+        String emotionJson = extractEmotionJson(rawResponse);
 
-                AiConversation record = new AiConversation();
-                record.setUserId(userId);
-                record.setSessionId(sessionId);
-                record.setUserMessage(userMessage);
-                record.setAiResponse(rawResponse);
-                record.setEmotionAnalysis(emotionJson);
-                record.setCreatedAt(LocalDateTime.now());
+        AiConversation record = new AiConversation();
+        record.setUserId(userId);
+        record.setSessionId(sessionId);
+        record.setUserMessage(userMessage);
+        record.setAiResponse(rawResponse);
+        record.setEmotionAnalysis(emotionJson);
+        record.setCreatedAt(LocalDateTime.now());
 
-                save(record);
-                return rawResponse;
-        }
+        save(record);
+        return rawResponse;
+    }
 
     private String extractEmotionJson(String aiResponse) {
         if (aiResponse == null) return null;

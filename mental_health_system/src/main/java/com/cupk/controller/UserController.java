@@ -49,8 +49,37 @@ public class UserController {
         return userService.removeById(id);
     }
 
+    @PostMapping("/register/code")
+    public Result<?> sendRegisterCode(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        if (email == null || email.trim().isEmpty()) {
+            return Result.error("邮箱不能为空");
+        }
+        if (userService.findByEmail(email) != null) {
+            return Result.error("邮箱已注册");
+        }
+        String code = String.valueOf((int) ((Math.random() * 9 + 1) * 100000));
+        passwordResetService.saveCode(email, code);
+        mailService.send(email, "注册验证码", "您的注册验证码是：" + code);
+        return Result.success("验证码已发送");
+    }
+
     @PostMapping("/register")
-    public Result<?> register(@RequestBody UserRegisterDTO dto) {
+    public Result<?> register(@RequestBody Map<String, String> body) {
+        String username = body.get("username");
+        String password = body.get("password");
+        String email = body.get("email");
+        String code = body.get("code");
+        if (username == null || password == null || email == null || code == null) {
+            return Result.error("所有字段均不能为空");
+        }
+        if (!passwordResetService.verifyCode(email, code)) {
+            return Result.error("验证码错误或已过期");
+        }
+        UserRegisterDTO dto = new UserRegisterDTO();
+        dto.setUsername(username);
+        dto.setPassword(password);
+        dto.setEmail(email);
         try {
             userService.register(dto);
             return Result.success();
@@ -71,7 +100,7 @@ public class UserController {
             data.put("userId", user.getId());
             data.put("username", user.getUsername());
             data.put("role", user.getRole());
-            data.put("avatar", user.getAvatar());
+            data.put("avatar", user.getAvatar() == null ? "" : user.getAvatar());
             return Result.success("登录成功", data);
         } catch (RuntimeException e) {
             return Result.error(e.getMessage());
