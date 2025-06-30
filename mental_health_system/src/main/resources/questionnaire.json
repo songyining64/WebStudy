@@ -1,13 +1,37 @@
 [
   {
     "id": 1,
-    "text": "How often do you feel anxious?",
+    "text": "在过去的两个星期里，您有多频繁感到情绪低落、沮丧或绝望？",
     "type": "radio",
-    "options": ["Never", "Rarely", "Sometimes", "Often", "Always"]
+    "options": ["完全没有", "几天", "超过一半的时间", "几乎每天"]
   },
   {
     "id": 2,
-    "text": "Do you have trouble sleeping?",
+    "text": "在过去的两个星期里，您有多频繁感到难以入睡、持续睡眠，或者睡眠过多？",
+    "type": "radio",
+    "options": ["完全没有", "几天", "超过一半的时间", "几乎每天"]
+  },
+  {
+    "id": 3,
+    "text": "您对目前的社交关系有多满意？",
+    "type": "radio",
+    "options": ["非常满意", "满意", "中立", "不满意", "非常不满意"]
+  },
+  {
+    "id": 4,
+    "text": "您多频繁参与让您感到愉快或有意义的活动？",
+    "type": "radio",
+    "options": ["从不", "很少", "有时", "经常", "非常经常"]
+  },
+  {
+    "id": 5,
+    "text": "您是否感到有可以倾诉并讨论问题的人？",
     "type": "boolean"
+  },
+  {
+    "id": 6,
+    "text": "总的来说，您如何评价您的整体心理健康状况？",
+    "type": "radio",
+    "options": ["极好", "好", "一般", "差", "很差"]
   }
 ]
