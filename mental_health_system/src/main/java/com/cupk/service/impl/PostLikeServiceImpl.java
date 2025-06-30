@@ -1,7 +1,6 @@
 package com.cupk.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cupk.entity.Post;
 import com.cupk.entity.PostLike;
 import com.cupk.mapper.PostLikeMapper;
