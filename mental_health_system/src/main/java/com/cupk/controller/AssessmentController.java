@@ -34,15 +34,24 @@ public class AssessmentController {
             assessment.setUserId(userId);
             assessment.setQuestionnaireId(questionnaireId);
             assessment.setAnswers(answersJson);
+
             // 先保存，获取ID
             userAssessmentService.save(assessment);
 
             // 调用AI生成评估报告
             String report = userAssessmentService.generateReport(assessment.getId());
-
             return ResponseEntity.ok(report);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("提交失败: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/{assessmentId}/report")
+    public ResponseEntity<String> getAssessmentReport(@PathVariable Long assessmentId) {
+        String report = userAssessmentService.generateReport(assessmentId);
+        if (report == null || report.startsWith("未找到")) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(report);
     }
 }
