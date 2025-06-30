@@ -1,0 +1,13 @@
+[
+  {
+    "id": 1,
+    "text": "How often do you feel anxious?",
+    "type": "radio",
+    "options": ["Never", "Rarely", "Sometimes", "Often", "Always"]
+  },
+  {
+    "id": 2,
+    "text": "Do you have trouble sleeping?",
+    "type": "boolean"
+  }
+]
