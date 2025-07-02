@@ -1,6 +1,7 @@
 package com.cupk.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.cupk.dto.UserRegisterDTO;
 import com.cupk.dto.UserLoginDTO;
 import com.cupk.entity.User;
@@ -18,6 +19,15 @@ public interface UserService extends IService<User> {
     void resetPassword(String email, String newPassword);
 
     User getByEmail(String email);
+
+    // 添加Token验证方法
+    /**
+     * 验证令牌并返回用户信息
+     * 
+     * @param token JWT令牌
+     * @return 用户信息，如果令牌无效则返回null
+     */
+    User validateToken(String token);
 
     // 新增管理员功能接口
 

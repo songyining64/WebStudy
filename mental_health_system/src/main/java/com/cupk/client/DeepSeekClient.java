@@ -19,6 +19,12 @@ public class DeepSeekClient {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
+    /**
+     * 使用多个消息调用DeepSeek API
+     * 
+     * @param messages 消息列表
+     * @return AI回复内容
+     */
     public String ask(List<Message> messages) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("model", "deepseek-chat");
@@ -33,6 +39,19 @@ public class DeepSeekClient {
         ResponseEntity<String> response = restTemplate.postForEntity(apiUrl, request, String.class);
 
         return response.getBody();
+    }
+
+    /**
+     * 使用单个提示词调用DeepSeek API
+     * 
+     * @param prompt 提示词内容
+     * @return AI回复内容
+     */
+    public String chat(String prompt) {
+        List<Message> messages = new ArrayList<>();
+        messages.add(new Message("system", "你是一位专业的心理咨询助手，负责提供专业、有帮助的回复。"));
+        messages.add(new Message("user", prompt));
+        return ask(messages);
     }
 
     @Data

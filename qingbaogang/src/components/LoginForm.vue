@@ -50,6 +50,7 @@
 
       <button type="submit" class="submit-btn" :disabled="isLoading">
         <span>{{ isLoading ? '登录中...' : '登 录' }}</span>
+        <span>{{ isLoading ? '登录中...' : '登 录' }}</span>
       </button>
     </form>
 
@@ -169,6 +170,8 @@ export default {
           localStorage.setItem('userId', res.data.userId);
           // 保存角色
           localStorage.setItem('userRole', res.data.role);
+          // 设置isAdmin状态
+          localStorage.setItem('isAdmin', (res.data.role === 'admin').toString());
           // 记住我逻辑
           if (this.rememberMe) {
             localStorage.setItem('rememberedEmail', this.credentials.email);
@@ -187,6 +190,12 @@ export default {
           });
           console.log('Pinia userId:', userStore.userId)
           await this.$nextTick();
+          // 根据角色跳转
+          if (res.data.role === 'admin') {
+            await this.$router.push('/admin');
+          } else {
+            await this.$router.push('/home');
+          }
           // 根据角色跳转
           if (res.data.role === 'admin') {
             await this.$router.push('/admin');

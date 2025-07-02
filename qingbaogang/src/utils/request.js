@@ -4,18 +4,54 @@ import axios from 'axios';
 import { getAuthToken } from './auth';
 
 // 从环境变量中获取 API 基础路径
-
-// 修改这里，指向你的后端服务
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/mental';
+// 使用相对路径，让Vite代理处理CORS
+const baseURL = import.meta.env.VITE_API_BASE_URL || '';
 
 // 创建 axios 实例
 const instance = axios.create({
     baseURL,
-    timeout: 15000, // 15秒超时
+    timeout: 60000, // 增加到60秒超时
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
+    },
+    // 增加请求重试配置
+    retry: 3, // 重试次数
+    retryDelay: 1000 // 重试间隔1秒
+});
+
+// 添加请求重试机制
+instance.interceptors.response.use(undefined, async (err) => {
+    const { config } = err;
+    // 如果配置不存在或重试次数为0，则拒绝请求
+    if (!config || !config.retry) {
+        return Promise.reject(err);
     }
+
+    // 设置变量以跟踪重试计数
+    config.__retryCount = config.__retryCount || 0;
+
+    // 检查是否已超过最大重试次数
+    if (config.__retryCount >= config.retry) {
+        // 拒绝请求并结束
+        return Promise.reject(err);
+    }
+
+    // 增加重试计数
+    config.__retryCount += 1;
+
+    // 创建新的Promise以处理延时
+    const backoff = new Promise((resolve) => {
+        setTimeout(() => {
+            resolve();
+        }, config.retryDelay || 1000);
+    });
+
+    // 等待延时后重试请求
+    await backoff;
+
+    // 返回重试的请求
+    return instance(config);
 });
 
 /**
@@ -32,15 +68,19 @@ instance.interceptors.request.use(
             config.headers.Authorization = `Bearer ${token}`;
         }
 
-        // 添加请求拦截器，保证X-User-Role只为英文
-        let role = localStorage.getItem('userRole');
-        if (role === '管理员') role = 'admin';
-        if (role === '用户') role = 'user';
-        if (role === 'admin' || role === 'user') {
+        // 添加用户角色到请求头
+        const role = localStorage.getItem('userRole');
+        if (role) {
             config.headers['X-User-Role'] = role;
-        } else {
-            // 不是admin/user就不加header，防止ISO-8859-1错误
-            delete config.headers['X-User-Role'];
+            // 记录请求发送的角色信息，用于调试
+            console.log('请求头携带角色信息:', role);
+        }
+
+        // 添加Content-Type头
+        if (config.method === 'patch' || config.method === 'post' || config.method === 'put') {
+            if (!config.headers['Content-Type'] && !config.headers.get('Content-Type')) {
+                config.headers['Content-Type'] = 'application/json';
+            }
         }
 
         return config;
@@ -113,11 +153,20 @@ instance.interceptors.response.use(
                     break;
                 case 401:
                     errorMessage = '未授权，请重新登录';
+                    // 清除无效的token和角色信息
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('userRole');
+                    localStorage.removeItem('isAdmin');
                     // 触发全局未授权事件
                     window.dispatchEvent(new CustomEvent('unauthorized'));
                     break;
                 case 403:
                     errorMessage = '禁止访问，权限不足';
+                    // 检查是否需要管理员权限
+                    if (error.config.url.includes('/api/admin')) {
+                        // 可能是用户无管理员权限但尝试访问管理页面
+                        console.error('权限不足，尝试访问管理员接口:', error.config.url);
+                    }
                     break;
                 case 404:
                     errorMessage = '请求资源不存在';
@@ -151,7 +200,7 @@ instance.interceptors.response.use(
 
 // 导出封装后的请求方法
 export const request = {
-    get: (url, params = {}, config = {}) => instance.get(url, { ...config, params }),
+    get: (url, config = {}) => instance.get(url, config),
     post: (url, data = {}, config = {}) => instance.post(url, data, config),
     put: (url, data = {}, config = {}) => instance.put(url, data, config),
     delete: (url, config = {}) => instance.delete(url, config),

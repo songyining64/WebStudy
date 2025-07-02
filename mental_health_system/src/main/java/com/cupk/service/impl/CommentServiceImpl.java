@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -265,25 +264,12 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public Comment getCommentById(Long commentId) {
         logger.info("根据ID获取评论: commentId={}", commentId);
+        return commentMapper.selectById(commentId);
+    }
 
-        if (commentId == null) {
-            logger.warn("评论ID为空");
-            return null;
-        }
-
-        // 查询评论基本信息
-        Comment comment = commentMapper.selectById(commentId);
-
-        if (comment == null) {
-            logger.warn("评论不存在: commentId={}", commentId);
-            return null;
-        }
-
-        // 设置点赞数
-        long likeCount = commentLikeService.getLikeCount(commentId);
-        comment.setLikeCount(likeCount);
-
-        logger.info("获取到评论: {}", comment);
-        return comment;
+    @Override
+    public long count() {
+        logger.info("获取评论总数");
+        return commentMapper.selectCount(null);
     }
 }

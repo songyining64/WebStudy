@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = { "http://localhost:5173", "http://127.0.0.1:5173" }, allowCredentials = "true")
 @RestController
 @RequestMapping("/api/ai")
 public class AiConversationController {
@@ -65,10 +65,10 @@ public class AiConversationController {
             @RequestParam String sessionId) {
         // 返回所有历史消息
         List<AiConversation> records = aiService.lambdaQuery()
-            .eq(AiConversation::getUserId, userId)
-            .eq(AiConversation::getSessionId, sessionId)
-            .orderByAsc(AiConversation::getCreatedAt)
-            .list();
+                .eq(AiConversation::getUserId, userId)
+                .eq(AiConversation::getSessionId, sessionId)
+                .orderByAsc(AiConversation::getCreatedAt)
+                .list();
         return Result.success(Map.of("records", records));
     }
 

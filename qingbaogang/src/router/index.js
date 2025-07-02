@@ -41,6 +41,12 @@ const routes = [
         meta: { requiresAuth: true, requiresAdmin: true }
     },
     {
+        path: '/admin',
+        name: 'AdminPanel',
+        component: () => import('@/views/AdminPanel.vue'),
+        meta: { requiresAuth: true, requiresAdmin: true }
+    },
+    {
         path: '/test',
         name: 'Test',
         component: () => import('@/views/Test.vue'),
@@ -65,6 +71,12 @@ const routes = [
         meta: { requiresAuth: true }
     },
     {
+        path: '/community/post/:id',
+        name: 'PostDetail',
+        component: () => import('@/views/PostDetail.vue'),
+        meta: { requiresAuth: true }
+    },
+    {
         path: '/history',
         name: 'History',
         component: () => import('@/views/History.vue'),
@@ -78,8 +90,10 @@ const routes = [
     },
     {
         path: '/post/:id',
-        name: 'PostDetail',
-        component: () => import('@/views/PostDetail.vue')
+        name: 'PostDetailOld',
+        redirect: to => {
+            return { path: `/community/post/${to.params.id}` }
+        }
     },
     {
         path: '/:pathMatch(.*)*',
@@ -96,6 +110,7 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
     const isAuthenticated = localStorage.getItem('authToken') // 使用 authToken 检查认证
     const isAdmin = localStorage.getItem('isAdmin') === 'true'
+
 
     if (to.meta.requiresAuth && !isAuthenticated) {
         next({

@@ -143,4 +143,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         return this.update(wrapper);
     }
+
+    @Override
+    public User validateToken(String token) {
+        try {
+            // 简单实现，实际项目中应该使用JWT进行解析
+            // 这里我们用用户名作为token，所以直接用token查找用户
+            User user = this.findByUsername(token);
+            if (user == null) {
+                // 也尝试用邮箱查找
+                user = this.findByEmail(token);
+            }
+            return user;
+        } catch (Exception e) {
+            System.out.println("验证token失败: " + e.getMessage());
+            return null;
+        }
+    }
 }

@@ -62,4 +62,11 @@ public interface CommentService {
      * @return 评论对象，如果不存在则返回null
      */
     Comment getCommentById(Long commentId);
+
+    /**
+     * 获取评论总数
+     *
+     * @return 评论总数
+     */
+    long count();
 }

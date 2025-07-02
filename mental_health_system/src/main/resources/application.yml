@@ -4,10 +4,20 @@ spring:
   application:
     name: MentalHealthSystem
   datasource:
-    url: jdbc:mysql://localhost:3306/mental_health_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    url: jdbc:mysql://localhost:3306/mental_health_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false&connectTimeout=30000&socketTimeout=60000&autoReconnect=true&failOverReadOnly=false&maxReconnects=10
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
     password: 123456
+    hikari:
+      connection-timeout: 30000
+      minimum-idle: 5
+      maximum-pool-size: 15
+      auto-commit: true
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-test-query: SELECT 1
+  jmx:
+    enabled: true
   jackson:
     date-format: yyyy-MM-dd
     time-zone: GMT+8
@@ -23,17 +33,33 @@ spring:
           ssl:
             enable: true
 
+
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
     map-underscore-to-camel-case: true
   mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: com.cupk.entity
+  global-config:
+    db-config:
+      id-type: auto
 
 server:
   port: 8080
   servlet:
     context-path: /mental
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  tomcat:
+    uri-encoding: UTF-8
+
+management:
+  endpoints:
+    jmx:
+      exposure:
+        include: "*"
 
 deepseek:
   api:
@@ -42,3 +68,5 @@ deepseek:
 
 questionnaire:
   file: classpath:questionnaires/default_questionnaire.json
+  assessment:
+    prompt: "根据以下问卷答案，提供一个心理健康评估报告：\n\n{{answers}}\n\n请给出综合评估，建议和改善方向。"

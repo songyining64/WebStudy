@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = { "http://localhost:5173", "http://127.0.0.1:5173" }, allowCredentials = "true")
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
@@ -27,31 +27,36 @@ public class UserController {
 
     @GetMapping
     public List<User> list(HttpServletRequest request) {
-        if (!isAdmin(request)) throw new RuntimeException("无权限");
+        if (!isAdmin(request))
+            throw new RuntimeException("无权限");
         return userService.list();
     }
 
     @GetMapping("/{id}")
     public User get(@PathVariable Long id, HttpServletRequest request) {
-        if (!isAdmin(request)) throw new RuntimeException("无权限");
+        if (!isAdmin(request))
+            throw new RuntimeException("无权限");
         return userService.getById(id);
     }
 
     @PostMapping
     public boolean add(@RequestBody User user, HttpServletRequest request) {
-        if (!isAdmin(request)) throw new RuntimeException("无权限");
+        if (!isAdmin(request))
+            throw new RuntimeException("无权限");
         return userService.save(user);
     }
 
     @PutMapping
     public boolean update(@RequestBody User user, HttpServletRequest request) {
-        if (!isAdmin(request)) throw new RuntimeException("无权限");
+        if (!isAdmin(request))
+            throw new RuntimeException("无权限");
         return userService.updateById(user);
     }
 
     @DeleteMapping("/{id}")
     public boolean delete(@PathVariable Long id, HttpServletRequest request) {
-        if (!isAdmin(request)) throw new RuntimeException("无权限");
+        if (!isAdmin(request))
+            throw new RuntimeException("无权限");
         return userService.removeById(id);
     }
 
