@@ -11,7 +11,6 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -116,13 +115,16 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<?> handleMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException e,
             HttpServletRequest request) {
+        String requiredType = e.getRequiredType() != null ? e.getRequiredType().getSimpleName() : "未知类型";
+
         logger.warn("参数类型不匹配: {} 应为 {}, 请求URL: {}, 请求方法: {}, 参数: {}",
                 e.getName(),
-                e.getRequiredType().getSimpleName(),
+                requiredType,
                 request.getRequestURL(),
                 request.getMethod(),
                 request.getQueryString());
-        return Result.error("参数类型不匹配: " + e.getName() + " 应为 " + e.getRequiredType().getSimpleName());
+
+        return Result.error("参数类型不匹配: " + e.getName() + " 应为 " + requiredType);
     }
 
     /**

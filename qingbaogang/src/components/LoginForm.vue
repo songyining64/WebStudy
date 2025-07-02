@@ -50,6 +50,7 @@
 
       <button type="submit" class="submit-btn" :disabled="isLoading">
         <span>{{ isLoading ? '登录中...' : '登 录' }}</span>
+        <span>{{ isLoading ? '登录中...' : '登 录' }}</span>
       </button>
     </form>
 
@@ -189,6 +190,12 @@ export default {
           });
           console.log('Pinia userId:', userStore.userId)
           await this.$nextTick();
+          // 根据角色跳转
+          if (res.data.role === 'admin') {
+            await this.$router.push('/admin');
+          } else {
+            await this.$router.push('/home');
+          }
           // 根据角色跳转
           if (res.data.role === 'admin') {
             await this.$router.push('/admin');

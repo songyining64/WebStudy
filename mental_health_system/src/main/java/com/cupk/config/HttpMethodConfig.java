@@ -29,7 +29,10 @@ public class HttpMethodConfig {
                 FilterChain filterChain)
                 throws ServletException, IOException {
             // 设置CORS头
-            response.setHeader("Access-Control-Allow-Origin", request.getHeader("Origin"));
+            String origin = request.getHeader("Origin");
+            if (origin != null && (origin.equals("http://localhost:5173") || origin.equals("http://127.0.0.1:5173"))) {
+                response.setHeader("Access-Control-Allow-Origin", origin);
+            }
             response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
             response.setHeader("Access-Control-Allow-Headers",
                     "Authorization, Content-Type, X-User-Role, X-Auth-Token, Origin, Accept");

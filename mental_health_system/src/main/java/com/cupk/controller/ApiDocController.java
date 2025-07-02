@@ -17,7 +17,7 @@ import java.util.*;
  * API文档控制器
  * 用于生成API路由清单，方便前端开发
  */
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = { "http://localhost:5173", "http://127.0.0.1:5173" }, allowCredentials = "true")
 @RestController
 @RequestMapping("/api/docs")
 public class ApiDocController {

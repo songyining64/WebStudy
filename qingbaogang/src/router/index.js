@@ -111,6 +111,7 @@ router.beforeEach((to, from, next) => {
     const isAuthenticated = localStorage.getItem('authToken') // 使用 authToken 检查认证
     const isAdmin = localStorage.getItem('isAdmin') === 'true'
 
+
     if (to.meta.requiresAuth && !isAuthenticated) {
         next({
             path: '/login',

@@ -49,7 +49,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowCredentials(true);
-        configuration.addAllowedOriginPattern("*"); // 允许所有来源
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://127.0.0.1:5173")); // 指定允许的来源
         configuration.addAllowedHeader("*"); // 允许所有头
         configuration.addAllowedMethod("*"); // 允许所有方法
         configuration.setMaxAge(3600L);

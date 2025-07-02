@@ -13,10 +13,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = { "http://localhost:5173", "http://127.0.0.1:5173" }, allowCredentials = "true")
 @RestController
 @RequestMapping("/api/ai")
 public class AiConversationController {
@@ -59,24 +60,28 @@ public class AiConversationController {
     }
 
     @GetMapping("/history")
-    public Result<IPage<AiConversation>> getHistory(
+    public Result<?> getHistory(
             @RequestParam Long userId,
-            @RequestParam String sessionId,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        LambdaQueryWrapper<AiConversation> query = new LambdaQueryWrapper<AiConversation>()
+            @RequestParam String sessionId) {
+        // 返回所有历史消息
+        List<AiConversation> records = aiService.lambdaQuery()
                 .eq(AiConversation::getUserId, userId)
                 .eq(AiConversation::getSessionId, sessionId)
-                .orderByAsc(AiConversation::getCreatedAt);
-
-        IPage<AiConversation> result = aiService.page(new Page<>(page, size), query);
-        return Result.success(result);
+                .orderByAsc(AiConversation::getCreatedAt)
+                .list();
+        return Result.success(Map.of("records", records));
     }
 
     @GetMapping("/session/new")
     public Result<String> newSession() {
         String sessionId = UUID.randomUUID().toString();
         return Result.success(sessionId);
+    }
+
+    @GetMapping("/sessions")
+    public Result<List<String>> getUserSessions(@RequestParam Long userId) {
+        List<String> sessionIds = aiService.getUserSessionIds(userId);
+        return Result.success(sessionIds);
     }
 
 }

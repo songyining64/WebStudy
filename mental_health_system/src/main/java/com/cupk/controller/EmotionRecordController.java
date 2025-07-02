@@ -15,7 +15,7 @@ import java.util.Map;
 /**
  * 情绪记录控制器
  */
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = { "http://localhost:5173", "http://127.0.0.1:5173" }, allowCredentials = "true")
 @RestController
 @RequestMapping("/api/emotion-record")
 public class EmotionRecordController {
@@ -47,8 +47,7 @@ public class EmotionRecordController {
             List<EmotionRecord> records = emotionRecordMapper.selectList(
                     new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<EmotionRecord>()
                             .eq("user_id", userId)
-                            .orderByDesc("record_time")
-            );
+                            .orderByDesc("record_time"));
             return Result.success(records);
         } catch (Exception e) {
             logger.error("获取用户情绪记录列表失败: userId={}", userId, e);

@@ -1,17 +1,26 @@
 spring:
   config:
-    import: optional:secrets.properties  # ✅ 加载你的 secrets 文件
+    import: optional:secrets.properties
   application:
     name: MentalHealthSystem
   datasource:
-    url: jdbc:mysql://localhost:3306/mental_health_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    url: jdbc:mysql://localhost:3306/mental_health_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false&connectTimeout=30000&socketTimeout=60000&autoReconnect=true&failOverReadOnly=false&maxReconnects=10
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
     password: 123456
+    hikari:
+      connection-timeout: 30000
+      minimum-idle: 5
+      maximum-pool-size: 15
+      auto-commit: true
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-test-query: SELECT 1
+  jmx:
+    enabled: true
   jackson:
     date-format: yyyy-MM-dd
     time-zone: GMT+8
-
   mail:
     host: smtp.qq.com
     username: 2042837972@qq.com
@@ -23,6 +32,7 @@ spring:
         smtp:
           ssl:
             enable: true
+
 
 mybatis-plus:
   configuration:
@@ -38,6 +48,18 @@ server:
   port: 8080
   servlet:
     context-path: /mental
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  tomcat:
+    uri-encoding: UTF-8
+
+management:
+  endpoints:
+    jmx:
+      exposure:
+        include: "*"
 
 deepseek:
   api:
