@@ -1,6 +1,7 @@
 package com.cupk.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.cupk.client.DeepSeekClient;
 import com.cupk.entity.AiConversation;
 import com.cupk.entity.UserAssessment;
@@ -93,6 +94,22 @@ public class AiConversationServiceImpl
         }
 
         return null;
+    }
+
+    @Override
+    public List<String> getUserSessionIds(Long userId) {
+        // 查询每个 sessionId 的最新 created_at
+        List<Map<String, Object>> list = this.baseMapper.selectMaps(
+            new QueryWrapper<AiConversation>()
+                .select("session_id, MAX(created_at) as last_time")
+                .eq("user_id", userId)
+                .groupBy("session_id")
+                .orderByDesc("last_time")
+        );
+        // 提取 session_id
+        return list.stream()
+            .map(m -> (String) m.get("session_id"))
+            .toList();
     }
 }
 

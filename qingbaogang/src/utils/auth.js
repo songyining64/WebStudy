@@ -30,3 +30,17 @@ export const authGuard = (to, from, next) => {
         next();
     }
 };
+
+export function setUserRole(role) {
+    let r = role;
+    if (role === '管理员') r = 'admin';
+    if (role === '用户') r = 'user';
+    localStorage.setItem('userRole', r);
+}
+
+export function getUserRole() {
+    let r = localStorage.getItem('userRole');
+    if (r === '管理员') r = 'admin';
+    if (r === '用户') r = 'user';
+    return r;
+}

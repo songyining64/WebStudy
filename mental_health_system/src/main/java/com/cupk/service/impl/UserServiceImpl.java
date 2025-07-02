@@ -1,6 +1,9 @@
 package com.cupk.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cupk.dto.UserRegisterDTO;
 import com.cupk.dto.UserLoginDTO;
@@ -45,14 +48,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public String login(UserLoginDTO dto) {
-        User user = userMapper.selectByUsername(dto.getUsername());
+        User user = userMapper.selectByEmail(dto.getUsername()); // 只用邮箱查找
         if (user == null) {
             throw new RuntimeException("用户未注册，请先注册");
         }
         if (!dto.getPassword().equals(user.getPassword())) { // 直接比较明文密码
             throw new RuntimeException("密码错误");
         }
-        // 这里应集成JWT生成token，暂时返回用户名作为token占位
+        // 这里应集成JWT生成token，暂时返回用户名作token占位
         return user.getUsername();
     }
 
@@ -87,5 +90,57 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(User::getEmail, email);
         return this.getOne(wrapper);
+    }
+
+    // 实现管理员相关接口
+
+    @Override
+    public IPage<User> getUserList(int page, int size, String keyword) {
+        Page<User> pageParam = new Page<>(page, size);
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+
+        // 如果有关键词，添加搜索条件（模糊搜索用户名或邮箱）
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            wrapper.like(User::getUsername, keyword)
+                    .or()
+                    .like(User::getEmail, keyword);
+        }
+
+        // 按创建时间倒序排序
+        wrapper.orderByDesc(User::getCreateTime);
+
+        return this.page(pageParam, wrapper);
+    }
+
+    @Override
+    public boolean updateUserInfo(User user) {
+        // 检查用户是否存在
+        User existingUser = this.getById(user.getId());
+        if (existingUser == null) {
+            return false;
+        }
+
+        // 只允许更新某些字段，避免修改敏感信息
+        User updateUser = new User();
+        updateUser.setId(user.getId());
+        updateUser.setUsername(user.getUsername());
+        updateUser.setEmail(user.getEmail());
+        updateUser.setRole(user.getRole());
+        updateUser.setAvatar(user.getAvatar());
+
+        return this.updateById(updateUser);
+    }
+
+    @Override
+    public boolean changeUserRole(Long userId, String role) {
+        if (!"admin".equals(role) && !"user".equals(role)) {
+            throw new RuntimeException("角色只能是admin或user");
+        }
+
+        LambdaUpdateWrapper<User> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(User::getId, userId)
+                .set(User::getRole, role);
+
+        return this.update(wrapper);
     }
 }

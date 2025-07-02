@@ -1,672 +1,1126 @@
 <template>
-  <div class="community-main">
-    <aside class="community-sidebar">
-      <div class="sidebar-title">分类</div>
-      <ul class="sidebar-list">
-        <li :class="{active: filterTag==='全部'}" @click="filterTag='全部'">全部</li>
-        <li v-for="tag in tags" :key="tag" :class="{active: filterTag===tag}" @click="filterTag=tag">{{ tag }}</li>
-      </ul>
-    </aside>
-    <section class="community-content">
-      <div class="community-header">
-        <input v-model="search" class="search-input" placeholder="搜索帖子/作者/标签..." @keyup.enter="handleSearch" />
-        <div class="header-actions">
-          <router-link to="/profile" class="profile-link">
-            <img :src="headerAvatarUrl" class="header-avatar" />
-            <span>我的主页</span>
-          </router-link>
-          <button class="post-btn" @click="showPostDialog=true">发布</button>
-        </div>
+  <div class="community-container">
+    <div class="community-header">
+      <div class="search-box">
+        <input type="text" v-model="searchQuery" placeholder="搜索帖子/作者/标签..." @keyup.enter="searchPosts" />
+        <button class="search-btn" @click="searchPosts">搜索</button>
+        <button class="advanced-search-btn" @click="showAdvancedSearch = !showAdvancedSearch">
+          {{ showAdvancedSearch ? '收起' : '高级搜索' }}
+        </button>
       </div>
-      <div class="post-list">
-        <div v-for="post in filteredPosts" :key="post.id" class="post-card" @click="viewPost(post)">
-          <img v-if="post.image" :src="post.image" class="post-img" />
-          <div class="post-info">
-            <div class="post-title">{{ post.title }}</div>
-            <div class="post-content">{{ post.content.slice(0, 48) }}{{ post.content.length>48?'...':'' }}</div>
-            <div class="post-meta">
-              <span class="post-author">{{ post.author }}</span>
-              <span class="post-tag" v-for="tag in post.tags" :key="tag">#{{ tag }}</span>
-            </div>
-            <div class="post-actions">
-              <span @click.stop="likePost(post)"><i :class="['icon-like', post.liked?'liked':'']"></i> {{ post.likes }}</span>
-              <span @click.stop="collectPost(post)"><i :class="['icon-star', post.collected?'collected':'']"></i> {{ post.collects }}</span>
-              <span><i class="icon-comment"></i> {{ post.comments.length }}</span>
-              <span v-if="canEdit(post)" @click.stop="editPost(post)"><i class="icon-edit"></i></span>
-              <span v-if="canEdit(post)" @click.stop="deletePost(post)"><i class="icon-delete"></i></span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="pagination">
-        <button :disabled="page===1" @click="page--">上一页</button>
-        <span>第{{page}}页</span>
-        <button :disabled="page===maxPage" @click="page++">下一页</button>
-      </div>
-    </section>
-    <!-- 发帖弹窗 -->
-    <div v-if="showPostDialog" class="dialog-bg">
-      <div class="dialog-box">
-        <h3>{{ editMode?'编辑帖子':'发布新帖' }}</h3>
-        <form @submit.prevent="submitPost">
-          <input v-model="postForm.title" placeholder="标题" required class="form-input" />
-          <textarea v-model="postForm.content" placeholder="内容" required class="form-textarea"></textarea>
-          
-          <!-- 图片上传区域 -->
-          <div class="image-upload-section">
-            <el-upload
-              class="image-uploader"
-              :show-file-list="false"
-              :before-upload="beforeImageUpload"
-              :http-request="handleImageUpload"
-              :auto-upload="true"
-              accept="image/*"
-            >
-              <div class="upload-area">
-                <img v-if="postForm.image" :src="postForm.image" class="image-preview" />
-                <div v-else class="upload-placeholder">
-                  <el-icon class="upload-icon"><Plus /></el-icon>
-                  <div class="upload-text">点击上传图片</div>
-                </div>
-              </div>
-            </el-upload>
-            <div v-if="postForm.image" class="image-actions">
-              <el-button type="danger" size="small" @click="removeImage">删除图片</el-button>
-            </div>
-          </div>
+      <button class="publish-btn" @click="showPostForm = true">发布</button>
+    </div>
 
-          <input v-model="postForm.tags" placeholder="标签（逗号分隔）" class="form-input" />
-          <div class="dialog-actions">
-            <button type="submit" class="submit-btn">{{ editMode?'保存':'发布' }}</button>
-            <button type="button" class="cancel-btn" @click="closeDialog">取消</button>
-          </div>
-        </form>
+    <!-- 分类和筛选 -->
+    <div class="filter-container">
+      <div class="categories">
+        <span 
+          v-for="category in categories" 
+          :key="category.value" 
+          :class="['category-item', { active: activeCategory === category.value }]"
+          @click="setCategory(category.value)"
+        >
+          {{ category.label }}
+        </span>
+      </div>
+      <div class="sort-options">
+        <span>排序:</span>
+        <select v-model="sortBy" @change="fetchPosts">
+          <option value="create_time">最新发布</option>
+          <option value="like_count">点赞数</option>
+          <option value="comment_count">评论数</option>
+        </select>
+        <select v-model="sortOrder" @change="fetchPosts">
+          <option value="DESC">降序</option>
+          <option value="ASC">升序</option>
+        </select>
       </div>
     </div>
-    <!-- 帖子详情弹窗 -->
-    <div v-if="showDetailDialog" class="dialog-bg">
-      <div class="dialog-box detail-box">
-        <h3>{{ detailPost.title }}</h3>
-        <img v-if="detailPost.image" :src="detailPost.image" class="detail-img" />
-        <div class="detail-content">{{ detailPost.content }}</div>
-        <div class="detail-meta">
-          <span>作者：{{ detailPost.author }}</span>
-          <span>标签：<span v-for="tag in detailPost.tags" :key="tag">#{{ tag }} </span></span>
-        </div>
-        <div class="detail-actions">
-          <span @click="likePost(detailPost)"><i :class="['icon-like', detailPost.liked?'liked':'']"></i> {{ detailPost.likes }}</span>
-          <span @click="collectPost(detailPost)"><i :class="['icon-star', detailPost.collected?'collected':'']"></i> {{ detailPost.collects }}</span>
-        </div>
-        <div class="comment-section">
-          <h4>评论</h4>
-          <div v-for="c in detailPost.comments" :key="c.id" class="comment-item">
-            <span class="comment-author">{{ c.author }}：</span>
-            <span>{{ c.content }}</span>
-            <span v-if="canDeleteComment(c)" class="delete-comment" @click="deleteComment(c)">
-              <i class="icon-delete"></i>
-            </span>
+
+    <!-- 帖子列表 -->
+    <div class="post-list">
+      <div v-for="post in posts" :key="post.id" class="post-card">
+        <div class="post-header">
+          <h3 class="post-title" @click="goToPostDetail(post.id)">{{ post.title }}</h3>
+          <div class="post-meta">
+            <span class="author">{{ post.username || post.userName || '匿名' }}</span>
+            <span class="date">{{ formatDate(post.createTime) }}</span>
           </div>
-          <form @submit.prevent="addComment">
-            <input v-model="commentInput" placeholder="写下你的评论..." class="form-input" />
-            <button type="submit" class="submit-btn">评论</button>
-          </form>
         </div>
-        <div class="dialog-actions">
-          <button class="cancel-btn" @click="showDetailDialog=false">关闭</button>
+        <div class="post-content" @click="goToPostDetail(post.id)">
+          {{ post.content && post.content.length > 120 ? post.content.substring(0, 120) + '...' : post.content }}
         </div>
+        <div class="post-tags">
+          <template v-if="post.tags && typeof post.tags === 'string'">
+            <span v-for="tag in post.tags.split(',')" :key="tag" class="tag">
+              #{{ tag.trim() }}
+            </span>
+          </template>
+          <template v-else-if="post.tags && Array.isArray(post.tags)">
+            <span v-for="tag in post.tags" :key="tag" class="tag">
+              #{{ typeof tag === 'string' ? tag.trim() : tag }}
+            </span>
+          </template>
+        </div>
+        <div class="post-actions">
+          <div class="action-item" @click="toggleLike(post)" :class="{ 'active': post.liked }">
+            <i :class="['icon', post.liked ? 'icon-liked' : 'icon-like']">{{ post.liked ? '❤️' : '🤍' }}</i>
+            <span>{{ post.likeCount || 0 }}</span>
+          </div>
+          <div class="action-item" @click="goToPostDetail(post.id)">
+            <i class="icon icon-comment">💬</i>
+            <span>{{ post.commentCount || 0 }}</span>
+          </div>
+          <div class="action-item" @click="toggleFavorite(post)" :class="{ 'active': post.favorited }">
+            <i :class="['icon', post.favorited ? 'icon-favorited' : 'icon-favorite']">{{ post.favorited ? '⭐' : '☆' }}</i>
+          </div>
+        </div>
+      </div>
+
+      <!-- 空状态 -->
+      <div v-if="posts.length === 0" class="empty-state">
+        <p>暂无帖子</p>
+        <button @click="showPostForm = true" class="empty-btn">发布第一篇帖子</button>
+      </div>
+    </div>
+
+    <!-- 分页 -->
+    <div class="pagination">
+      <button :disabled="currentPage === 1" @click="prevPage" class="page-btn">上一页</button>
+      <span class="page-indicator">第 {{ currentPage }} 页</span>
+      <button :disabled="!hasMorePages" @click="nextPage" class="page-btn">下一页</button>
+    </div>
+
+    <!-- 发帖表单弹窗 -->
+    <div v-if="showPostForm" class="modal-overlay">
+      <div class="modal-content post-form-modal">
+        <div class="modal-header">
+          <h3>发布帖子</h3>
+          <button @click="showPostForm = false" class="close-btn">&times;</button>
+        </div>
+        <div class="post-form">
+          <input v-model="newPost.title" placeholder="标题" class="form-control" />
+          <select v-model="newPost.category" class="form-control" required>
+            <option value="" disabled>请选择分类</option>
+            <option v-for="item in categories" :key="item.value" :value="item.value">{{ item.label }}</option>
+          </select>
+          <textarea v-model="newPost.content" placeholder="分享你的故事..." class="form-control" rows="6"></textarea>
+          <input v-model="newPost.tags" placeholder="添加标签，用逗号分隔" class="form-control" />
+          <div class="form-footer">
+            <button @click="showPostForm = false" class="cancel-btn">取消</button>
+            <button @click="createNewPost" class="submit-btn" :disabled="!newPost.title || !newPost.content || !newPost.category">发布</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 高级搜索面板 -->
+    <div v-if="showAdvancedSearch" class="advanced-search-panel">
+      <div class="advanced-search-form">
+        <div class="form-group">
+          <label>关键词</label>
+          <input type="text" v-model="advancedSearch.keyword" placeholder="搜索标题、内容和标签" />
+        </div>
+        <div class="form-group">
+          <label>分类</label>
+          <select v-model="advancedSearch.category">
+            <option value="">全部分类</option>
+            <option v-for="category in categories.slice(1)" :key="category.value" :value="category.value">
+              {{ category.label }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>排序方式</label>
+          <select v-model="advancedSearch.sortBy">
+            <option value="create_time">发布时间</option>
+            <option value="like_count">点赞数</option>
+            <option value="comment_count">评论数</option>
+          </select>
+          <select v-model="advancedSearch.sortOrder">
+            <option value="DESC">降序</option>
+            <option value="ASC">升序</option>
+          </select>
+        </div>
+        <button class="search-btn" @click="applyAdvancedSearch">搜索</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useUserStore } from '../stores/user'
-import { usePostStore } from '../stores/posts'
-import { ElMessage } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
-import defaultAvatarUrl from '@/assets/default-avatar.png'
+import { ref, onMounted, computed, reactive } from 'vue'
+import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user'
+import { 
+  getPostList, 
+  createPost, 
+  likePost, 
+  unlikePost, 
+  isPostLiked, 
+  getPostLikeCount,
+  favoritePost,
+  unfavoritePost,
+  isPostFavorited,
+  searchPosts as apiSearchPosts,
+  getPostsByCategory,
+  advancedSearchPosts
+} from '@/api/communityApi'
 
+const router = useRouter()
 const userStore = useUserStore()
-const postStore = usePostStore()
 
-const tags = ['情绪', '互助', '成长', '心理急救', '生活']
-const filterTag = ref('全部')
-const search = ref('')
-const page = ref(1)
-const pageSize = 8
-const showPostDialog = ref(false)
-const showDetailDialog = ref(false)
-const editMode = ref(false)
-const postForm = ref({id:null, title:'', content:'', image:'', tags:''})
-const detailPost = ref({})
-const commentInput = ref('')
+// 响应式状态
+const posts = ref([])
+const currentPage = ref(1)
+const pageSize = ref(5)
+const hasMorePages = ref(true)
+const searchQuery = ref('')
+const showPostForm = ref(false)
+const activeCategory = ref('all')
+const sortBy = ref('create_time')
+const sortOrder = ref('DESC')
+const isLoading = ref(false)
+const apiError = ref(null)
+const searchMode = ref('basic') // 'basic', 'keyword', 'category', 'advanced'
+const showAdvancedSearch = ref(false)
+const advancedSearch = reactive({
+  keyword: '',
+  category: '',
+  sortBy: 'create_time',
+  sortOrder: 'DESC'
+})
+const mockPosts = ref([
+  {
+    id: 'mock1',
+    title: '欢迎来到心理健康社区',
+    content: '这是一个模拟帖子，当API未正常工作时会显示。在这里，我们可以分享心理健康相关的话题和经验。',
+    createTime: new Date().toISOString(),
+    updateTime: new Date().toISOString(),
+    userId: 1,
+    username: '系统管理员',
+    avatar: '/src/assets/default-avatar.png',
+    tags: '心理健康,社区',
+    category: '公告',
+    likeCount: 15,
+    commentCount: 5
+  },
+  {
+    id: 'mock2',
+    title: '如何缓解学习压力',
+    content: '分享一些缓解学习压力的小技巧...',
+    createTime: new Date(Date.now() - 86400000).toISOString(),
+    updateTime: new Date(Date.now() - 86400000).toISOString(),
+    userId: 2,
+    username: '心理咨询师',
+    avatar: '/src/assets/default-avatar.png',
+    tags: '压力管理,学习方法',
+    category: '学习',
+    likeCount: 8,
+    commentCount: 3
+  }
+])
+const useMockData = ref(false)
 
-const filteredPosts = computed(() => {
-  let arr = postStore.posts.filter(p =>
-    (filterTag.value === '全部' || p.tags.includes(filterTag.value)) &&
-    (search.value === '' || p.title.includes(search.value) || p.content.includes(search.value) || 
-     p.author.includes(search.value) || p.tags.join(',').includes(search.value))
-  )
-  return arr.slice((page.value-1)*pageSize, page.value*pageSize)
+// 用户信息
+const userAvatar = computed(() => userStore.avatar || '/src/assets/default-avatar.png')
+
+// 发帖表单
+const newPost = reactive({
+  title: '',
+  content: '',
+  tags: '',
+  category: ''
 })
 
-const maxPage = computed(() => {
-  let arr = postStore.posts.filter(p =>
-    (filterTag.value === '全部' || p.tags.includes(filterTag.value)) &&
-    (search.value === '' || p.title.includes(search.value) || p.content.includes(search.value) || 
-     p.author.includes(search.value) || p.tags.join(',').includes(search.value))
-  )
-  return Math.max(1, Math.ceil(arr.length/pageSize))
-})
+// 分类
+const categories = [
+  { label: '全部', value: 'all' },
+  { label: '心理健康', value: '心理健康' },
+  { label: '学习方法', value: '学习方法' },
+  { label: '情感', value: '情感' },
+  { label: '压力管理', value: '压力管理' },
+  { label: '社交', value: '社交' },
+  { label: '职业发展', value: '职业发展' },
+  { label: '健康', value: '健康' },
+  { label: '生活', value: '生活' },
+  { label: '其他', value: '其他' }
+]
 
-const handleSearch = () => { 
-  page.value = 1
-}
-
-const likePost = (post) => {
-  postStore.toggleLike(post.id)
-  if (detailPost.value.id === post.id) {
-    const updatedPost = postStore.posts.find(p => p.id === post.id)
-    if (updatedPost) {
-      detailPost.value.liked = updatedPost.liked
-      detailPost.value.likes = updatedPost.likes
-    }
-  }
-}
-
-const collectPost = (post) => {
-  postStore.toggleCollect(post.id)
-  if (detailPost.value.id === post.id) {
-    const updatedPost = postStore.posts.find(p => p.id === post.id)
-    if (updatedPost) {
-      detailPost.value.collected = updatedPost.collected
-      detailPost.value.collects = updatedPost.collects
-    }
-  }
-}
-
-const canEdit = (post) => post.author === userStore.name
-
-const editPost = (post) => {
-  editMode.value = true
-  showPostDialog.value = true
-  postForm.value = {...post, tags: post.tags.join(',')}
-}
-
-const deletePost = (post) => {
-  if(confirm('确定删除该帖子？')) {
-    postStore.deletePost(post.id)
-  }
-}
-
-const closeDialog = () => {
-  showPostDialog.value = false
-  editMode.value = false
-  postForm.value = {id:null, title:'', content:'', image:'', tags:''}
-}
-
-const submitPost = () => {
-  const postData = {
-    ...postForm.value,
-    tags: postForm.value.tags.split(',').map(t => t.trim()),
-    author: userStore.name
-  }
-
-  if(editMode.value) {
-    postStore.updatePost(postData)
-  } else {
-    postStore.addPost(postData)
-  }
-  closeDialog()
-}
-
-const viewPost = (post) => {
-  detailPost.value = JSON.parse(JSON.stringify(post))
-  showDetailDialog.value = true
-  commentInput.value = ''
-}
-
-const addComment = () => {
-  if(!commentInput.value.trim()) return
-  const newComment = {
-    id: Date.now(),
-    author: userStore.name,
-    content: commentInput.value
-  }
+// 获取帖子列表
+const fetchPosts = async () => {
+  console.log('开始获取帖子列表，参数:', {
+    current: currentPage.value,
+    size: pageSize.value,
+    category: activeCategory.value,
+    keyword: searchQuery.value,
+    sortBy: sortBy.value,
+    sortOrder: sortOrder.value,
+    searchMode: searchMode.value
+  })
   
-  postStore.addComment(detailPost.value.id, newComment)
-  detailPost.value.comments.push(newComment)
-  commentInput.value = ''
-}
-
-const canDeleteComment = (comment) => {
-  return comment.author === userStore.name || detailPost.value.author === userStore.name
-}
-
-const deleteComment = (comment) => {
-  if(!confirm('确定删除这条评论？')) return
+  isLoading.value = true
+  apiError.value = null
   
-  postStore.deleteComment(detailPost.value.id, comment.id)
-  detailPost.value.comments = detailPost.value.comments.filter(c => c.id !== comment.id)
-}
-
-// 图片上传前的验证
-const beforeImageUpload = (file) => {
-  const isImage = file.type.startsWith('image/')
-  const isLt5M = file.size / 1024 / 1024 < 5
-
-  if (!isImage) {
-    ElMessage.error('只能上传图片文件!')
-    return false
-  }
-  if (!isLt5M) {
-    ElMessage.error('图片大小不能超过 5MB!')
-    return false
-  }
-  return true
-}
-
-// 处理图片上传
-const handleImageUpload = async ({ file }) => {
   try {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      postForm.value.image = e.target.result
+    // 构建基础参数
+    const params = {
+      current: currentPage.value,
+      size: pageSize.value
     }
-    reader.onerror = (error) => {
-      console.error('Error reading file:', error)
-      ElMessage.error('读取文件失败')
+    
+    let response
+    
+    // 根据搜索模式选择不同的API
+    switch (searchMode.value) {
+      case 'keyword':
+        // 关键词搜索
+        console.log('执行关键词搜索，关键词:', searchQuery.value);
+        params.keyword = searchQuery.value
+        console.log('准备调用搜索API，参数:', params);
+        try {
+          response = await apiSearchPosts(params)
+          console.log('搜索API响应:', response);
+        } catch (error) {
+          console.error('搜索API调用失败:', error);
+        }
+        break
+        
+      case 'category':
+        // 分类筛选
+        response = await getPostsByCategory(activeCategory.value, params)
+        break
+        
+      case 'advanced':
+        // 高级搜索
+        params.keyword = searchQuery.value
+        params.category = activeCategory.value !== 'all' ? activeCategory.value : undefined
+        params.sortBy = sortBy.value
+        params.sortOrder = sortOrder.value
+        response = await advancedSearchPosts(params)
+        break
+        
+      default:
+        // 基础搜索
+        if (activeCategory.value && activeCategory.value !== 'all') {
+          params.category = activeCategory.value
+        }
+        if (searchQuery.value) {
+          params.keyword = searchQuery.value
+        }
+        params.sortBy = sortBy.value
+        params.sortOrder = sortOrder.value
+        response = await getPostList(params)
     }
-    reader.readAsDataURL(file)
+    
+    if (response && response.data) {
+      console.log('获取帖子列表成功:', response.data)
+      
+      let postList = []
+      
+      // 处理返回的分页对象
+      if (response.data.records) {
+        postList = response.data.records.map(post => {
+          // 确保tags格式一致
+          if (post.tags && Array.isArray(post.tags)) {
+            post.tags = post.tags.join(',');
+          }
+          return post;
+        });
+        hasMorePages.value = currentPage.value * pageSize.value < response.data.total
+      } else if (Array.isArray(response.data)) {
+        postList = response.data.map(post => {
+          // 确保tags格式一致
+          if (post.tags && Array.isArray(post.tags)) {
+            post.tags = post.tags.join(',');
+          }
+          return post;
+        });
+        hasMorePages.value = response.data.length >= pageSize.value
+      } else {
+        console.warn('未知的响应数据格式:', response.data)
+        useMockData.value = true
+      }
+      
+      // 如果获取到了帖子列表，给每个帖子获取点赞和收藏状态
+      if (postList.length > 0 && !useMockData.value) {
+        const userId = userStore.userId
+        
+        // 打印第一个帖子的数据结构
+        if (postList[0]) {
+          console.log('帖子列表中的单个帖子数据结构:', postList[0])
+        }
+        
+        // 使用 Promise.all 并行获取所有帖子的点赞和收藏状态
+        const postsWithStatus = await Promise.all(
+          postList.map(async (post) => {
+            try {
+              let liked = false
+              let likeCount = post.likeCount || 0
+              let favorited = false
+              
+              // 尝试从本地存储获取点赞和收藏状态
+              const likeKey = `post_like_${post.id}_${userId}`
+              const favoriteKey = `post_favorite_${post.id}_${userId}`
+              const likeData = localStorage.getItem(likeKey)
+              const favoriteData = localStorage.getItem(favoriteKey)
+              
+              // 如果本地存储有数据，先使用本地数据
+              if (likeData) {
+                try {
+                  const parsedLike = JSON.parse(likeData)
+                  if (parsedLike && parsedLike.timestamp) {
+                    // 如果缓存时间不超过1小时，使用本地数据
+                    if (Date.now() - parsedLike.timestamp < 3600000) {
+                      liked = parsedLike.liked
+                      console.log(`从本地缓存获取帖子${post.id}的点赞状态:`, liked)
+                    }
+                  }
+                } catch (e) {
+                  console.error('解析本地点赞数据失败:', e)
+                }
+              }
+              
+              if (favoriteData) {
+                try {
+                  const parsedFavorite = JSON.parse(favoriteData)
+                  if (parsedFavorite && parsedFavorite.timestamp) {
+                    // 如果缓存时间不超过1小时，使用本地数据
+                    if (Date.now() - parsedFavorite.timestamp < 3600000) {
+                      favorited = parsedFavorite.favorited
+                      console.log(`从本地缓存获取帖子${post.id}的收藏状态:`, favorited)
+                    }
+                  }
+                } catch (e) {
+                  console.error('解析本地收藏数据失败:', e)
+                }
+              }
+              
+              // 无论是否有本地缓存，都尝试从服务器获取最新状态
+              const results = await Promise.allSettled([
+                isPostLiked(post.id, userId),
+                getPostLikeCount(post.id),
+                isPostFavorited(post.id)
+              ])
+              
+              // 处理每个结果
+              const likedResult = results[0].status === 'fulfilled' ? results[0].value : null
+              const likeCountResult = results[1].status === 'fulfilled' ? results[1].value : null
+              const favoritedResult = results[2].status === 'fulfilled' ? results[2].value : null
+              
+              // 如果服务器请求成功，使用服务器数据并更新本地缓存
+              if (likedResult) {
+                liked = likedResult.data || false
+                localStorage.setItem(likeKey, JSON.stringify({
+                  liked,
+                  timestamp: Date.now()
+                }))
+              }
+              
+              if (likeCountResult) {
+                likeCount = likeCountResult.data || 0
+              }
+              
+              if (favoritedResult) {
+                favorited = favoritedResult.data || false
+                localStorage.setItem(favoriteKey, JSON.stringify({
+                  favorited,
+                  timestamp: Date.now()
+                }))
+              }
+              
+              // 更新帖子数据
+              return {
+                ...post,
+                liked,
+                likeCount,
+                favorited
+              }
+            } catch (err) {
+              console.warn(`获取帖子 ${post.id} 的状态失败:`, err)
+              // 如果获取失败，使用默认值
+              return {
+                ...post,
+                liked: false,
+                likeCount: post.likeCount || 0,
+                favorited: false
+              }
+            }
+          })
+        )
+        
+        posts.value = postsWithStatus
+      } else {
+        posts.value = postList
+      }
+    } else {
+      console.warn('响应数据为空')
+      useMockData.value = true
+    }
   } catch (error) {
-    console.error('Upload failed:', error)
-    ElMessage.error('上传失败')
+    console.error('获取帖子列表失败:', error)
+    apiError.value = error
+    useMockData.value = true
+  } finally {
+    isLoading.value = false
+    
+    // 如果需要使用模拟数据
+    if (useMockData.value) {
+      console.log('使用模拟数据')
+      posts.value = mockPosts.value
+      hasMorePages.value = false
+    }
   }
 }
 
-// 移除图片
-const removeImage = () => {
-  postForm.value.image = ''
+// 创建新帖子
+const createNewPost = async () => {
+  if (!newPost.title || !newPost.content || !newPost.category) {
+    alert('标题、内容和分类不能为空')
+    return
+  }
+  try {
+    const postData = {
+      title: newPost.title,
+      content: newPost.content,
+      tags: newPost.tags,
+      userId: userStore.userId || '1',
+      username: userStore.username || '用户' + (userStore.userId || '1'),
+      category: newPost.category
+    }
+    
+    console.log('创建帖子，带用户名:', postData)
+    
+    // 发送创建帖子请求
+    const response = await createPost(postData)
+    
+    console.log('发帖成功，服务器返回:', response)
+    
+    // 重置表单
+    newPost.title = ''
+    newPost.content = ''
+    newPost.tags = ''
+    newPost.category = ''
+    showPostForm.value = false
+    
+    // 显示成功消息
+    alert('发帖成功！')
+    
+    // 重新加载帖子列表 - 回到第一页
+    currentPage.value = 1
+    // 延迟刷新以确保后端数据更新
+    setTimeout(() => {
+      fetchPosts()
+    }, 1000)
+  } catch (error) {
+    console.error('发帖失败:', error)
+    alert('发帖失败，请稍后重试')
+  }
 }
 
-const headerAvatarUrl = computed(() => userStore.avatar || defaultAvatarUrl)
+// 点赞/取消点赞
+const toggleLike = async (post) => {
+  // 如果未登录，提示用户
+  if (!userStore.isLoggedIn) {
+    alert('请先登录后再点赞')
+    router.push('/login')
+    return
+  }
+
+  const userId = userStore.userId
+  if (!userId) {
+    console.error('未找到用户ID')
+    return
+  }
+  
+  try {
+    // 确保postId是有效的
+    if (!post.id) {
+      console.error('无效的帖子ID', post)
+      throw new Error('无效的帖子数据')
+    }
+    
+    // 添加调试日志
+    console.log(`处理点赞操作：帖子ID=${post.id}(${typeof post.id})，帖子标题="${post.title}"，用户ID=${userId}, 当前点赞状态=${post.liked}`)
+    
+    // 先在UI上立即反馈，再发送请求
+    const originalStatus = post.liked
+    const originalCount = post.likeCount || 0
+    
+    // 更新UI状态
+    post.liked = !originalStatus
+    post.likeCount = originalStatus ? (originalCount - 1) : (originalCount + 1)
+    
+    // 发送API请求
+    let response
+    if (originalStatus) {
+      // 取消点赞
+      console.log(`准备发送取消点赞请求，帖子ID=${post.id}，用户ID=${userId}`)
+      response = await unlikePost(post.id, userId)
+      console.log('取消点赞响应:', response)
+      
+      if (response && response.code === 200) {
+        console.log('取消点赞成功')
+      } else if (response && response.msg && (response.msg.includes('未点赞') || response.msg.includes('没有点赞'))) {
+        console.warn('该帖子未被点赞，无需取消')
+        // 不需要恢复UI状态
+      } else {
+        throw new Error(response?.msg || '取消点赞失败')
+      }
+    } else {
+      // 点赞
+      console.log(`准备发送点赞请求，帖子ID=${post.id}，用户ID=${userId}`)
+      response = await likePost(post.id, userId)
+      console.log('点赞响应:', response)
+      
+      if (response && response.code === 200) {
+        console.log('点赞成功')
+      } else if (response && response.msg && response.msg.includes('已经点赞')) {
+        console.warn('已经点赞过该帖子')
+        // 不需要恢复UI状态，因为帖子实际上已经是点赞状态
+      } else {
+        console.error('点赞请求异常响应:', response)
+        throw new Error(response?.msg || '点赞失败')
+      }
+    }
+    
+    // 延时 1 秒后再次检查点赞状态，确认数据库状态
+    setTimeout(async () => {
+      try {
+        const checkResponse = await isPostLiked(post.id, userId)
+        console.log(`点赞操作后状态检查：帖子ID=${post.id}，数据库中的点赞状态=${checkResponse.data}`)
+        
+        // 如果状态不一致，需要向用户提示
+        if (checkResponse.data !== post.liked) {
+          console.warn('点赞状态与数据库不一致，可能需要刷新页面')
+        }
+      } catch (err) {
+        console.error('检查点赞状态失败:', err)
+      }
+    }, 1000)
+    
+  } catch (error) {
+    // 如果API请求失败，恢复UI状态
+    console.error('点赞操作失败:', error)
+    post.liked = !post.liked
+    post.likeCount = post.liked ? (post.likeCount + 1) : (post.likeCount - 1)
+    
+    // 显示错误信息
+    alert(error.message || '操作失败，请稍后重试')
+  }
+}
+
+// 收藏/取消收藏
+const toggleFavorite = async (post) => {
+  // 检查用户是否登录
+  if (!userStore.isLoggedIn) {
+    alert('请先登录后再收藏')
+    router.push('/login')
+    return
+  }
+  
+  const userId = userStore.userId
+  if (!userId) {
+    console.error('未找到用户ID')
+    return
+  }
+  
+  try {
+    // 确保帖子ID有效
+    if (!post.id) {
+      throw new Error('无效的帖子数据')
+    }
+    
+    console.log(`处理收藏操作：帖子ID=${post.id}, 当前收藏状态=${post.favorited}`)
+    
+    // 先更新UI状态
+    const originalStatus = post.favorited
+    post.favorited = !originalStatus
+    
+    // 更新本地存储
+    const favoriteKey = `post_favorite_${post.id}_${userId}`
+    localStorage.setItem(favoriteKey, JSON.stringify({
+      favorited: post.favorited,
+      timestamp: Date.now()
+    }))
+    
+    // 发送API请求
+    if (originalStatus) {
+      // 取消收藏
+      await unfavoritePost(post.id)
+    } else {
+      // 收藏
+      await favoritePost(post.id)
+    }
+    
+    console.log(originalStatus ? '取消收藏成功' : '收藏成功')
+  } catch (error) {
+    console.error('收藏操作失败:', error)
+    
+    // 恢复UI状态
+    post.favorited = !post.favorited
+    
+    // 恢复本地存储
+    const favoriteKey = `post_favorite_${post.id}_${userId}`
+    localStorage.setItem(favoriteKey, JSON.stringify({
+      favorited: post.favorited,
+      timestamp: Date.now()
+    }))
+    
+    // 显示错误提示
+    alert('收藏操作失败，请稍后重试')
+  }
+}
+
+// 翻页
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--
+    fetchPosts()
+  }
+}
+
+const nextPage = () => {
+  if (hasMorePages.value) {
+    currentPage.value++
+    fetchPosts()
+  }
+}
+
+// 搜索帖子
+const searchPosts = () => {
+  console.log('搜索按钮被点击，当前搜索关键词:', searchQuery.value);
+  
+  if (searchQuery.value) {
+    console.log('设置搜索模式为 keyword');
+    searchMode.value = 'keyword'
+  } else {
+    console.log('设置搜索模式为 basic');
+    searchMode.value = 'basic'
+  }
+  
+  console.log('重置页码为 1');
+  currentPage.value = 1
+  
+  console.log('调用 fetchPosts 函数获取帖子');
+  fetchPosts()
+}
+
+// 设置分类
+const setCategory = (category) => {
+  activeCategory.value = category
+  if (category !== 'all') {
+    searchMode.value = 'category'
+  } else {
+    searchMode.value = 'basic'
+  }
+  currentPage.value = 1
+  fetchPosts()
+}
+
+// 执行高级搜索
+const doAdvancedSearch = () => {
+  searchMode.value = 'advanced'
+  currentPage.value = 1
+  fetchPosts()
+}
+
+// 应用高级搜索
+const applyAdvancedSearch = () => {
+  // 将高级搜索的值应用到主搜索
+  searchQuery.value = advancedSearch.keyword
+  
+  if (advancedSearch.category) {
+    activeCategory.value = advancedSearch.category
+  } else {
+    activeCategory.value = 'all'
+  }
+  
+  sortBy.value = advancedSearch.sortBy
+  sortOrder.value = advancedSearch.sortOrder
+  
+  // 设置搜索模式为高级搜索
+  searchMode.value = 'advanced'
+  
+  // 重置页码
+  currentPage.value = 1
+  
+  // 关闭高级搜索面板
+  showAdvancedSearch.value = false
+  
+  // 执行搜索
+  fetchPosts()
+}
+
+// 格式化日期
+const formatDate = (dateString) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return date.toLocaleDateString('zh-CN')
+}
+
+// 跳转到帖子详情
+const goToPostDetail = (postId) => {
+  router.push(`/post/${postId}`)
+}
+
+// 跳转到个人主页
+const goToProfile = () => {
+  router.push('/user-profile')
+}
+
+// 组件挂载后获取帖子列表
+onMounted(() => {
+  // 初始化获取帖子列表
+  fetchPosts()
+})
 </script>
 
 <style scoped>
-.community-main {
-  display: flex;
-  min-height: 92vh;
-  background: #f8fafc;
+.community-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
 }
-.community-sidebar {
-  width: 120px;
-  background: #fff;
-  border-right: 1px solid #eaeaea;
-  padding: 32px 0 0 0;
-  min-height: 100%;
-}
-.sidebar-title {
-  font-size: 1.1rem;
-  font-weight: bold;
-  color: #2980b9;
-  margin-left: 18px;
-  margin-bottom: 18px;
-}
-.sidebar-list {
-  list-style: none;
-  padding: 0 0 0 18px;
-  margin: 0;
-}
-.sidebar-list li {
-  padding: 8px 0;
-  cursor: pointer;
-  color: #444;
-  border-radius: 6px 0 0 6px;
-  transition: background 0.2s, color 0.2s;
-}
-.sidebar-list li.active, .sidebar-list li:hover {
-  background: #eaf6ff;
-  color: #2980b9;
-}
-.community-content {
-  flex: 1;
-  padding: 32px 32px 0 32px;
-  min-width: 0;
-}
+
 .community-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
+  gap: 10px;
 }
-.search-input {
-  width: 320px;
-  height: 38px;
-  border-radius: 8px;
-  border: 1.5px solid #e0e7ef;
-  padding: 0 16px;
-  font-size: 16px;
-  margin-right: 18px;
-}
-.header-actions {
+
+.search-box {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
+  max-width: 600px;
 }
-.profile-link {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  text-decoration: none;
-  color: #2c3e50;
-  font-weight: 500;
+
+.search-box input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.search-btn {
   padding: 8px 16px;
-  border-radius: 8px;
-  background: #f8fafc;
-  transition: background 0.2s;
-}
-.profile-link:hover {
-  background: #edf2f7;
-}
-.header-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-.post-btn {
-  background: #3498db;
-  color: #fff;
+  background-color: #1890ff;
+  color: white;
   border: none;
-  border-radius: 8px;
-  padding: 10px 24px;
-  font-size: 16px;
-  font-weight: 600;
+  border-radius: 4px;
   cursor: pointer;
-  transition: background 0.2s;
 }
-.post-btn:hover {
-  background: #2980b9;
+
+.advanced-search-btn {
+  padding: 8px 16px;
+  background-color: transparent;
+  color: #1890ff;
+  border: 1px solid #1890ff;
+  border-radius: 4px;
+  cursor: pointer;
 }
+
+.publish-btn {
+  padding: 8px 16px;
+  background-color: #1890ff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.filter-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.categories {
+  display: flex;
+  gap: 10px;
+}
+
+.category-item {
+  padding: 8px 16px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.category-item.active {
+  background-color: #1890ff;
+  color: white;
+}
+
+.sort-options {
+  display: flex;
+  gap: 10px;
+}
+
 .post-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
+
 .post-card {
-  background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 2px 12px rgba(52,152,219,0.08);
-  overflow: hidden;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  transition: box-shadow 0.2s;
-  position: relative;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 16px;
+  background-color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
-.post-card:hover {
-  box-shadow: 0 6px 24px rgba(52,152,219,0.16);
-}
-.post-img {
-  width: 100%;
-  height: 140px;
-  object-fit: cover;
-  background: #eee;
-}
-.post-info {
-  padding: 16px 16px 10px 16px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
+
 .post-title {
-  font-size: 1.1rem;
-  font-weight: bold;
-  color: #222;
-  margin-bottom: 6px;
+  margin: 0 0 8px 0;
+  cursor: pointer;
+  color: #333;
 }
-.post-content {
-  color: #444;
-  font-size: 0.98rem;
-  margin-bottom: 8px;
-  flex: 1;
-}
+
 .post-meta {
-  font-size: 0.92rem;
+  display: flex;
+  gap: 10px;
   color: #888;
-  margin-bottom: 8px;
+  font-size: 13px;
+  margin-bottom: 10px;
 }
-.post-tag {
-  background: #eaf6ff;
-  color: #3498db;
-  border-radius: 6px;
-  padding: 2px 8px;
-  margin-left: 6px;
-  font-size: 0.9em;
+
+.post-content {
+  color: #333;
+  margin-bottom: 12px;
+  line-height: 1.5;
+  cursor: pointer;
 }
+
+.post-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tag {
+  color: #1890ff;
+  font-size: 13px;
+}
+
 .post-actions {
   display: flex;
+  gap: 20px;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 12px;
+}
+
+.action-item {
+  display: flex;
   align-items: center;
-  gap: 14px;
-  font-size: 1rem;
+  gap: 5px;
+  cursor: pointer;
   color: #888;
-  margin-top: 2px;
 }
-.icon-like, .icon-star, .icon-comment, .icon-edit, .icon-delete {
-  font-style: normal;
-  margin-right: 3px;
+
+.action-item.active {
+  color: #1890ff;
 }
-.icon-like:before { content: '👍'; }
-.icon-like.liked:before { content: '💙'; }
-.icon-star:before { content: '☆'; }
-.icon-star.collected:before { content: '★'; }
-.icon-comment:before { content: '💬'; }
-.icon-edit:before { content: '✏️'; }
-.icon-delete:before { content: '🗑️'; }
-.icon-like.liked, .icon-star.collected { color: #3498db; }
+
+.action-item:hover {
+  color: #1890ff;
+}
+
+.icon-liked {
+  color: #f56c6c;
+}
+
+.icon-favorited {
+  color: #faad14;
+}
+
 .pagination {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 18px;
-  margin: 32px 0 0 0;
+  gap: 20px;
+  margin-top: 30px;
 }
-.pagination button {
-  background: #f2f6fa;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 18px;
-  font-size: 1rem;
-  color: #2980b9;
+
+.page-btn {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  background-color: #fff;
+  border-radius: 4px;
   cursor: pointer;
-  transition: background 0.2s;
 }
-.pagination button:disabled {
-  background: #e0e7ef;
-  color: #aaa;
+
+.page-btn:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
-.dialog-bg {
+
+.page-indicator {
+  color: #666;
+}
+
+/* 弹窗样式 */
+.modal-overlay {
   position: fixed;
-  left: 0; top: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.13);
-  z-index: 9999;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.5);
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  z-index: 1000;
 }
-.dialog-box {
-  background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 4px 32px rgba(52,152,219,0.18);
-  padding: 32px 28px 18px 28px;
-  min-width: 340px;
-  max-width: 95vw;
-  position: relative;
+
+.modal-content {
+  background-color: #fff;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
   max-height: 90vh;
-  overflow-y: auto;
+  overflow: auto;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
 }
-.dialog-box h3 {
-  text-align: center;
-  margin-bottom: 18px;
-  color: #2980b9;
-  font-size: 1.2rem;
-}
-.form-input {
-  width: 100%;
-  height: 38px;
-  border-radius: 8px;
-  border: 1.5px solid #e0e7ef;
-  padding: 0 12px;
-  font-size: 15px;
-  margin-bottom: 12px;
-}
-.form-textarea {
-  width: 100%;
-  min-height: 70px;
-  border-radius: 8px;
-  border: 1.5px solid #e0e7ef;
-  padding: 8px 12px;
-  font-size: 15px;
-  margin-bottom: 12px;
-  resize: vertical;
-}
-.dialog-actions {
+
+.modal-header {
   display: flex;
   justify-content: space-between;
-  margin-top: 18px;
-  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #eee;
 }
-.submit-btn {
-  background: #3498db;
-  color: #fff;
+
+.modal-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.close-btn {
+  background: none;
   border: none;
-  border-radius: 8px;
-  padding: 10px 24px;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 24px;
   cursor: pointer;
-  transition: background 0.2s;
+  color: #888;
 }
-.submit-btn:hover {
-  background: #2980b9;
+
+.post-form {
+  padding: 16px;
 }
+
+.form-control {
+  width: 100%;
+  margin-bottom: 16px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+textarea.form-control {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.form-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
 .cancel-btn {
-  background: #eee;
-  color: #444;
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  background-color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.submit-btn {
+  padding: 8px 16px;
+  background-color: #1890ff;
+  color: white;
   border: none;
-  border-radius: 8px;
-  padding: 10px 18px;
-  font-size: 1rem;
+  border-radius: 4px;
   cursor: pointer;
-  transition: background 0.2s;
 }
-.cancel-btn:hover {
-  background: #e0e7ef;
+
+.submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
-.detail-box {
-  min-width: 420px;
-  max-width: 600px;
-}
-.detail-img {
-  width: 100%;
-  max-height: 400px;
-  object-fit: contain;
-  margin: 16px 0;
-}
-.detail-content {
-  font-size: 1.05rem;
-  color: #444;
-  margin-bottom: 10px;
-}
-.detail-meta {
-  font-size: 0.95rem;
-  color: #888;
-  margin-bottom: 8px;
-}
-.detail-actions {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  font-size: 1rem;
-  color: #888;
-  margin-bottom: 10px;
-}
-.comment-section {
-  margin-top: 18px;
-}
-.comment-section h4 {
-  font-size: 1.05rem;
-  color: #2980b9;
-  margin-bottom: 8px;
-}
-.comment-item {
-  background: #f8fafc;
-  border-radius: 8px;
-  padding: 6px 12px;
-  margin-bottom: 6px;
-  font-size: 0.98rem;
-  display: flex;
-  align-items: center;
-}
-.comment-author {
-  color: #3498db;
-  font-weight: 600;
-}
-.delete-comment {
-  margin-left: auto;
-  cursor: pointer;
-  color: #e74c3c;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-.delete-comment:hover {
-  opacity: 1;
-}
-.image-upload-section {
-  margin: 16px 0;
-}
-.image-uploader {
+
+.empty-state {
   text-align: center;
+  padding: 40px 0;
+  color: #888;
 }
-.upload-area {
-  width: 200px;
-  height: 200px;
-  border: 1px dashed #d9d9d9;
-  border-radius: 8px;
+
+.empty-btn {
+  margin-top: 16px;
+  padding: 8px 16px;
+  background-color: #1890ff;
+  color: white;
+  border: none;
+  border-radius: 4px;
   cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition: border-color 0.3s;
-  margin: 0 auto;
 }
-.upload-area:hover {
-  border-color: #409EFF;
-}
-.image-preview {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.upload-placeholder {
+
+/* 高级搜索面板样式 */
+.advanced-search-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.5);
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 100%;
+  z-index: 1001;
 }
-.upload-icon {
-  font-size: 28px;
-  color: #8c939d;
+
+.advanced-search-form {
+  background-color: #fff;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow: auto;
+  padding: 16px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
   margin-bottom: 8px;
+  color: #333;
 }
-.upload-text {
-  color: #8c939d;
-  font-size: 14px;
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
 }
-.image-actions {
-  margin-top: 8px;
-  text-align: center;
+
+.search-btn {
+  padding: 8px 16px;
+  background-color: #1890ff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 </style> 

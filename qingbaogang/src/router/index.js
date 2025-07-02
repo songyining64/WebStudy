@@ -61,7 +61,7 @@ const routes = [
     {
         path: '/community',
         name: 'Community',
-        component: Community,
+        component: () => import('@/views/Community.vue'),
         meta: { requiresAuth: true }
     },
     {
@@ -75,6 +75,11 @@ const routes = [
         name: 'UserProfile',
         component: UserProfile,
         meta: { requiresAuth: true }
+    },
+    {
+        path: '/post/:id',
+        name: 'PostDetail',
+        component: () => import('@/views/PostDetail.vue')
     },
     {
         path: '/:pathMatch(.*)*',
@@ -91,7 +96,7 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
     const isAuthenticated = localStorage.getItem('authToken') // 使用 authToken 检查认证
     const isAdmin = localStorage.getItem('isAdmin') === 'true'
-    
+
     if (to.meta.requiresAuth && !isAuthenticated) {
         next({
             path: '/login',

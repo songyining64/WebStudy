@@ -1,207 +1,251 @@
 <template>
-  <div class="card">
-    <h2 class="card-title">
-      <span class="icon">🤖</span> 聊天机器人
-    </h2>
-    <div class="chatbot-section">
-      <div class="chat-history">
-        <div v-for="(msg, idx) in messages" :key="idx" :class="['chatbot-bubble', msg.role]">
-          {{ msg.content }}
+  <div class="chatbot-layout">
+    <div class="session-list">
+      <button class="new-session-btn" @click="newSession">+ 新建会话</button>
+      <ul>
+        <li
+          v-for="s in sessionList"
+          :key="s.id"
+          :class="{active: s.id === currentSessionId}"
+          @click="switchSession(s.id)"
+        >
+          {{ s.title }}
+        </li>
+      </ul>
+    </div>
+    <div class="chatbot-container">
+      <div class="chat-header">情波港·AI柴郡</div>
+      <div class="chat-messages" ref="messagesRef">
+        <div v-for="(msg, idx) in messages" :key="idx" :class="['chat-msg', msg.role]">
+          <div class="avatar">
+            <img v-if="msg.role==='ai'" src="/src/assets/cheshire.png" alt="AI" />
+            <img v-else src="/src/assets/default-avatar.png" alt="用户" />
+          </div>
+          <div class="bubble" v-if="msg.role==='ai'" v-html="msg.content"></div>
+          <div class="bubble" v-else>{{ msg.content }}</div>
         </div>
       </div>
-      <div class="chat-input-row">
+      <div class="chat-input-area">
         <input
-            v-model="userInput"
-            @keyup.enter="sendMessage"
-            placeholder="请输入你的问题..."
+            v-model="input"
+            @keyup.enter="sendMsg"
             class="chat-input"
-            :disabled="loading"
+            placeholder="请输入您的问题..."
+            maxlength="200"
         />
-        <button @click="sendMessage" :disabled="loading || !userInput.trim()" class="send-btn">
-          {{ loading ? '发送中...' : '发送' }}
-        </button>
+        <button @click="sendMsg" class="send-btn">发送</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
-import { request } from '@/utils/request'
-import { useUserStore } from '@/stores/user'
-import { storeToRefs } from 'pinia'
+import { onMounted } from 'vue';
+import * as logic from './ChatBot.logic.js';
 
-const userStore = useUserStore()
-const refs = storeToRefs(userStore)
-console.log('userStore keys:', Object.keys(userStore))
-console.log('storeToRefs(userStore):', refs)
-console.log('userId:', refs.userId)
-
-const sessionId = ref('')
-const userInput = ref('')
-const messages = ref([
-  { role: 'bot', content: '欢迎来到心理健康助手，有什么可以帮您？' }
-])
-const loading = ref(false)
-
-// 滚动到底部
-const scrollToBottom = () => {
-  nextTick(() => {
-    const history = document.querySelector('.chat-history')
-    if (history) history.scrollTop = history.scrollHeight
-  })
-}
-
-// 获取新会话ID
-const getSessionId = async () => {
-  try {
-    const res = await request.get('/api/ai/session/new')
-    if (res.code === 200) sessionId.value = res.data
-  } catch (err) {
-    messages.value.push({ role: 'bot', content: '无法获取会话ID，请刷新页面重试' })
-  }
-}
+const {
+  userId,
+  sessionList,
+  currentSessionId,
+  messages,
+  input,
+  newSession,
+  switchSession,
+  sendMsg,
+  scrollToBottom,
+  fetchSessionList
+} = logic;
 
 onMounted(async () => {
-  await getSessionId()
-  scrollToBottom()
-})
-
-const sendMessage = async () => {
-  const content = userInput.value.trim()
-  if (!content || !sessionId.value) return
-  if (!refs.userId || !refs.userId.value) {
-    messages.value.push({ role: 'bot', content: '未检测到用户ID，请重新登录。' })
-    loading.value = false
-    return
+  await fetchSessionList();
+  if (sessionList.value.length > 0) {
+    await switchSession(sessionList.value[0].id);
+  } else {
+    await newSession();
   }
-  messages.value.push({ role: 'user', content })
-  userInput.value = ''
-  loading.value = true
-  scrollToBottom()
-  try {
-    console.log('chat request params:', {
-      message: content,
-      sessionId: sessionId.value,
-      userId: refs.userId.value
-    })
-    const res = await request.post('/api/ai/chat', {
-      message: content,
-      sessionId: sessionId.value,
-      userId: refs.userId.value
-    })
-    let aiReply = ''
-    if (res.code === 200) {
-      // 1. 如果后端返回的 data 是对象（不是字符串），直接取 content
-      if (res.data && typeof res.data === 'object' && res.data.choices) {
-        aiReply = res.data.choices[0]?.message?.content || '[AI无回复]'
-      }
-      // 2. 如果 data 是 JSON 字符串，先解析再取 content
-      else if (typeof res.data === 'string' && res.data.trim().startsWith('{')) {
-        try {
-          const parsed = JSON.parse(res.data)
-          aiReply = parsed.choices?.[0]?.message?.content || res.data
-        } catch (e) {
-          aiReply = res.data
-        }
-      }
-      // 3. 否则直接显示
-      else {
-        aiReply = res.data
-      }
-      // 去掉 content 前面的 JSON 情绪描述
-      if (typeof aiReply === 'string' && aiReply.startsWith('🌡️')) {
-        aiReply = aiReply.replace(/^🌡️[^{]*\{.*?\}\s*/s, '').trim()
-      }
-      messages.value.push({ role: 'bot', content: aiReply })
-    } else {
-      messages.value.push({ role: 'bot', content: res.msg || 'AI服务异常' })
-    }
-  } catch (err) {
-    // 优先显示后端返回的msg或message字段
-    const msg = err?.message || err?.msg || err?.data?.msg || 'AI服务异常';
-    messages.value.push({ role: 'bot', content: msg });
-  } finally {
-    loading.value = false
-    scrollToBottom()
-  }
-}
+});
 </script>
 
 <style scoped>
-.card {
-  background: #fff;
-  border-radius: 18px;
-  box-shadow: 0 6px 32px 0 rgba(52,152,219,0.10), 0 1.5px 6px 0 rgba(44,62,80,0.06);
-  padding: 48px 56px;
-  min-width: 340px;
-  max-width: 420px;
-  margin: 48px auto 0 auto;
+:global(body) {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #f8fafc;
 }
-.card-title {
-  font-size: 1.7rem;
-  color: #2980b9;
-  font-weight: 700;
-  margin-bottom: 24px;
+.chatbot-layout {
   display: flex;
-  align-items: center;
+  width: 100vw;
+  height: 100vh;
 }
-.icon {
-  font-size: 1.5em;
-  margin-right: 12px;
-}
-.chatbot-section {
-  margin-top: 18px;
-  font-size: 1.05rem;
-}
-.chat-history {
-  min-height: 180px;
-  max-height: 320px;
-  overflow-y: auto;
-  margin-bottom: 16px;
+.session-list {
+  width: 260px;
+  background: #f4f8fb;
+  border-right: 1.5px solid #e0e6ed;
+  padding: 0 0 0 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  align-items: stretch;
 }
-.chatbot-bubble {
-  display: inline-block;
-  padding: 10px 16px;
-  border-radius: 16px;
-  max-width: 90%;
-  word-break: break-all;
+.new-session-btn {
+  margin: 24px 16px 12px 16px;
+  padding: 10px 0;
+  font-size: 16px;
+  background: #3498db;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
 }
-.chatbot-bubble.user {
-  background: #eaf6ff;
-  color: #2980b9;
-  align-self: flex-end;
+.session-list ul {
+  list-style: none;
+  padding: 0 0 0 0;
+  margin: 0;
+  flex: 1;
+  overflow-y: auto;
 }
-.chatbot-bubble.bot {
-  background: #f3f9f6;
-  color: #444;
-  align-self: flex-start;
+.session-list li {
+  padding: 14px 18px;
+  cursor: pointer;
+  border-bottom: 1px solid #e0e6ed;
+  font-size: 15px;
+  color: #333;
+  transition: background 0.2s;
 }
-.chat-input-row {
+.session-list li.active,
+.session-list li:hover {
+  background: #eaf2fb;
+  color: #217dbb;
+}
+.chatbot-container {
+  flex: 1;
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  height: 100vh;
+  background: #fff;
+}
+.chat-header {
+  font-size: 26px;
+  font-weight: bold;
+  padding: 28px 0 18px 0;
+  text-align: center;
+  border-bottom: 1px solid #f0f0f0;
+  letter-spacing: 2px;
+}
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px 32px;
+  background: #f8fafc;
+}
+.chat-msg {
+  display: flex;
+  align-items: flex-end;
+  margin-bottom: 22px;
+}
+.chat-msg.user {
+  flex-direction: row-reverse;
+}
+.chat-msg .avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin: 0 12px;
+  background: #eaf2fb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.chat-msg .avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.bubble {
+  max-width: 480px;
+  padding: 16px 22px;
+  border-radius: 18px;
+  font-size: 18px;
+  line-height: 1.8;
+  word-break: break-all;
+  background: #eaf2fb;
+  color: #222;
+}
+.bubble :deep(pre) {
+  background: #f4f4f4;
+  padding: 10px;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-size: 15px;
+}
+.bubble :deep(code) {
+  background: #f4f4f4;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #c7254e;
+  font-size: 95%;
+}
+.bubble :deep(ul), .bubble :deep(ol) {
+  margin: 8px 0 8px 20px;
+}
+.bubble :deep(strong) {
+  font-weight: bold;
+}
+.bubble :deep(em) {
+  font-style: italic;
+}
+.chat-msg.user .bubble {
+  background: #d0e6fa;
+  color: #222;
+}
+.chat-input-area {
+  display: flex;
+  align-items: center;
+  padding: 20px 32px 28px 32px;
+  border-top: 1px solid #f0f0f0;
+  background: #fff;
 }
 .chat-input {
   flex: 1;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #d0d7de;
-  font-size: 1rem;
+  height: 48px;
+  border: 1.5px solid #d0e6fa;
+  border-radius: 24px;
+  padding: 0 20px;
+  font-size: 18px;
+  outline: none;
+  margin-right: 16px;
+  background: #f8fafc;
 }
 .send-btn {
-  padding: 0 18px;
-  border-radius: 8px;
-  background: #2980b9;
+  background: #3498db;
   color: #fff;
   border: none;
-  font-weight: 600;
+  border-radius: 24px;
+  padding: 0 32px;
+  height: 48px;
+  font-size: 18px;
   cursor: pointer;
+  transition: background 0.2s;
 }
-.send-btn:disabled {
-  background: #b2bec3;
-  cursor: not-allowed;
+.send-btn:hover {
+  background: #217dbb;
+}
+.bubble .emotion-card {
+  background: #f6faff;
+  border-left: 5px solid #3498db;
+  border-radius: 8px;
+  padding: 10px 16px;
+  margin-bottom: 10px;
+  font-size: 15px;
+  color: #222;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 24px;
+}
+.bubble .emotion-card span {
+  margin-right: 18px;
+  min-width: 90px;
+  display: inline-block;
 }
 </style>

@@ -3,13 +3,14 @@ package com.cupk.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.IdType;
 import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
 @TableName("comment")
 public class Comment {
-    @TableId
+    @TableId(type = IdType.AUTO)
     private Long id;
 
     @TableField("post_id")
@@ -32,4 +33,20 @@ public class Comment {
 
     @TableField("status")
     private Integer status;
+
+    // 非数据库字段，用于前端显示
+    @TableField(exist = false)
+    private String username;
+
+    // 非数据库字段，用于前端显示用户头像
+    @TableField(exist = false)
+    private String avatar;
+
+    // 非数据库字段，评论点赞数
+    @TableField(exist = false)
+    private Long likeCount;
+
+    // 非数据库字段，是否已点赞
+    @TableField(exist = false)
+    private Boolean liked;
 }

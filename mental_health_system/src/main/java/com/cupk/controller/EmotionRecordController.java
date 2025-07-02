@@ -1,100 +1,40 @@
 package com.cupk.controller;
 
 import com.cupk.entity.EmotionRecord;
-import com.cupk.service.EmotionRecordService;
 import com.cupk.service.Result;
+import com.cupk.mapper.EmotionRecordMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 情绪记录控制器
  */
 @CrossOrigin(origins = "*")
 @RestController
-@RequestMapping("/api/emotion-records")
+@RequestMapping("/api/emotion-record")
 public class EmotionRecordController {
     private static final Logger logger = LoggerFactory.getLogger(EmotionRecordController.class);
 
     @Autowired
-    private EmotionRecordService emotionRecordService;
+    private EmotionRecordMapper emotionRecordMapper;
 
     /**
-     * 获取所有情绪记录
+     * 查询所有情绪记录
      */
     @GetMapping
     public Result<List<EmotionRecord>> list() {
         try {
-            List<EmotionRecord> records = emotionRecordService.list();
+            List<EmotionRecord> records = emotionRecordMapper.selectList(null);
             return Result.success(records);
         } catch (Exception e) {
             logger.error("获取情绪记录列表失败", e);
             return Result.error("获取情绪记录列表失败");
-        }
-    }
-
-    /**
-     * 根据ID获取情绪记录
-     */
-    @GetMapping("/{id}")
-    public Result<EmotionRecord> get(@PathVariable Long id) {
-        try {
-            EmotionRecord record = emotionRecordService.getById(id);
-            if (record != null) {
-                return Result.success(record);
-            } else {
-                return Result.error("未找到对应的情绪记录");
-            }
-        } catch (Exception e) {
-            logger.error("获取情绪记录失败: id={}", id, e);
-            return Result.error("获取情绪记录失败");
-        }
-    }
-
-    /**
-     * 添加情绪记录
-     */
-    @PostMapping
-    public Result<Boolean> add(@RequestBody EmotionRecord record) {
-        try {
-            boolean success = emotionRecordService.save(record);
-            return success ? Result.success(true) : Result.error("保存情绪记录失败");
-        } catch (Exception e) {
-            logger.error("保存情绪记录失败", e);
-            return Result.error("保存情绪记录失败");
-        }
-    }
-
-    /**
-     * 更新情绪记录
-     */
-    @PutMapping
-    public Result<Boolean> update(@RequestBody EmotionRecord record) {
-        try {
-            if (record.getId() == null) {
-                return Result.validateFailed("ID不能为空");
-            }
-            boolean success = emotionRecordService.updateById(record);
-            return success ? Result.success(true) : Result.error("更新情绪记录失败");
-        } catch (Exception e) {
-            logger.error("更新情绪记录失败", e);
-            return Result.error("更新情绪记录失败");
-        }
-    }
-
-    /**
-     * 删除情绪记录
-     */
-    @DeleteMapping("/{id}")
-    public Result<Boolean> delete(@PathVariable Long id) {
-        try {
-            boolean success = emotionRecordService.removeById(id);
-            return success ? Result.success(true) : Result.error("删除情绪记录失败");
-        } catch (Exception e) {
-            logger.error("删除情绪记录失败: id={}", id, e);
-            return Result.error("删除情绪记录失败");
         }
     }
 
@@ -104,14 +44,51 @@ public class EmotionRecordController {
     @GetMapping("/user/{userId}")
     public Result<List<EmotionRecord>> getByUserId(@PathVariable Long userId) {
         try {
-            List<EmotionRecord> records = emotionRecordService.lambdaQuery()
-                    .eq(EmotionRecord::getUserId, userId)
-                    .orderByDesc(EmotionRecord::getRecordTime)
-                    .list();
+            List<EmotionRecord> records = emotionRecordMapper.selectList(
+                    new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<EmotionRecord>()
+                            .eq("user_id", userId)
+                            .orderByDesc("record_time")
+            );
             return Result.success(records);
         } catch (Exception e) {
             logger.error("获取用户情绪记录列表失败: userId={}", userId, e);
             return Result.error("获取用户情绪记录列表失败");
+        }
+    }
+
+    /**
+     * 保存情绪评估记录（问卷评估专用）
+     */
+    @PostMapping("/record")
+    public Result<?> saveRecord(@RequestBody Map<String, Object> payload) {
+        try {
+            System.out.println("收到情绪评估保存请求: " + payload);
+            EmotionRecord record = new EmotionRecord();
+            // 用户ID
+            record.setUserId(Long.valueOf(payload.get("userId").toString()));
+            // content 存问卷答案
+            record.setContent(payload.get("answers").toString());
+            // emotionType 存评估结果类型（如良好/一般/波动等）
+            record.setEmotionType(payload.getOrDefault("emotionType", payload.getOrDefault("result", "")).toString());
+            // confidence 存分数
+            if (payload.get("score") != null) {
+                try {
+                    record.setConfidence(new BigDecimal(payload.get("score").toString()));
+                } catch (Exception e) {
+                    record.setConfidence(BigDecimal.ZERO);
+                }
+            }
+            // recordTime 存当前时间
+            record.setRecordTime(LocalDateTime.now());
+            // suggestions 存评语
+            record.setSuggestions(payload.getOrDefault("result", "").toString());
+            int rows = emotionRecordMapper.insert(record);
+            System.out.println("插入结果: " + rows + ", 记录: " + record);
+            return Result.success();
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.error("保存情绪评估记录失败", e);
+            return Result.error("保存情绪评估记录失败");
         }
     }
 }

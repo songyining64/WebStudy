@@ -1,6 +1,6 @@
 spring:
   config:
-    import: optional:secrets.properties  # ✅ 加载你的 secrets 文件
+    import: optional:secrets.properties
   application:
     name: MentalHealthSystem
   datasource:
@@ -11,7 +11,6 @@ spring:
   jackson:
     date-format: yyyy-MM-dd
     time-zone: GMT+8
-
   mail:
     host: smtp.qq.com
     username: 2042837972@qq.com

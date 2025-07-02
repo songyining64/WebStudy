@@ -1,775 +1,423 @@
-<script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useUserStore } from '@/stores/user'
-
-const userStore = useUserStore()
-
-// 响应式数据
-const users = ref([])
-const searchQuery = ref('')
-const showEditModal = ref(false)
-const editingUser = ref({})
-const settings = ref({
-  allowRegistration: true,
-  requireEmailVerification: false,
-  autoModerateContent: true,
-  allowFileUpload: true,
-  emailNotifications: true,
-  pushNotifications: false
-})
-
-// 计算属性
-const filteredUsers = computed(() => {
-  if (!searchQuery.value) return users.value
-  return users.value.filter(user => 
-    user.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.value.toLowerCase())
-  )
-})
-
-const adminUsers = computed(() => {
-  return users.value.filter(user => user.role === 'admin')
-})
-
-const activeUsers = computed(() => {
-  return users.value.filter(user => user.status === 'active')
-})
-
-const newUsersThisMonth = computed(() => {
-  const now = new Date()
-  const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-  return users.value.filter(user => new Date(user.createdAt) >= thisMonth)
-})
-
-// 方法
-const loadUsers = () => {
-  // 模拟从API加载用户数据
-  users.value = [
-    {
-      id: 1,
-      name: '管理员',
-      email: 'admin@example.com',
-      avatar: '/src/assets/default-avatar.png',
-      role: 'admin',
-      status: 'active',
-      createdAt: '2024-01-01'
-    },
-    {
-      id: 2,
-      name: '张三',
-      email: 'zhangsan@example.com',
-      avatar: '/src/assets/default-avatar.png',
-      role: 'user',
-      status: 'active',
-      createdAt: '2024-01-15'
-    },
-    {
-      id: 3,
-      name: '李四',
-      email: 'lisi@example.com',
-      avatar: '/src/assets/default-avatar.png',
-      role: 'user',
-      status: 'inactive',
-      createdAt: '2024-01-20'
-    },
-    {
-      id: 4,
-      name: '王五',
-      email: 'wangwu@example.com',
-      avatar: '/src/assets/default-avatar.png',
-      role: 'admin',
-      status: 'active',
-      createdAt: '2024-02-01'
-    }
-  ]
-}
-
-const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleDateString('zh-CN')
-}
-
-const editUser = (user) => {
-  editingUser.value = { ...user }
-  showEditModal.value = true
-}
-
-const closeEditModal = () => {
-  showEditModal.value = false
-  editingUser.value = {}
-}
-
-const saveUserEdit = () => {
-  const index = users.value.findIndex(u => u.id === editingUser.value.id)
-  if (index !== -1) {
-    users.value[index] = { ...editingUser.value }
-  }
-  closeEditModal()
-}
-
-const toggleUserRole = (user) => {
-  const newRole = user.role === 'admin' ? 'user' : 'admin'
-  const index = users.value.findIndex(u => u.id === user.id)
-  if (index !== -1) {
-    users.value[index].role = newRole
-  }
-}
-
-const deleteUser = (user) => {
-  if (confirm(`确定要删除用户 "${user.name}" 吗？`)) {
-    const index = users.value.findIndex(u => u.id === user.id)
-    if (index !== -1) {
-      users.value.splice(index, 1)
-    }
-  }
-}
-
-const saveSettings = () => {
-  // 保存设置到localStorage或API
-  localStorage.setItem('adminSettings', JSON.stringify(settings.value))
-  alert('设置已保存')
-}
-
-const loadSettings = () => {
-  const savedSettings = localStorage.getItem('adminSettings')
-  if (savedSettings) {
-    settings.value = { ...settings.value, ...JSON.parse(savedSettings) }
-  }
-}
-
-// 生命周期
-onMounted(() => {
-  loadUsers()
-  loadSettings()
-})
-</script>
-
 <template>
-  <div class="admin-container">
-    <div class="admin-header">
-      <h1>管理员控制台</h1>
-      <div class="admin-info">
-        <span>欢迎，{{ userStore.name }}</span>
-        <span class="role-badge">管理员</span>
+  <div class="manage-container">
+    <h2>帖子管理</h2>
+    
+    <!-- 发帖表单 -->
+    <div class="card post-form-card">
+      <h3>发布新帖子</h3>
+      <div class="post-form">
+        <input v-model="title" placeholder="帖子标题" class="input-field" />
+        <textarea v-model="content" placeholder="帖子内容" class="textarea-field" rows="5"></textarea>
+        <button @click="handlePost" class="btn primary-btn">发布帖子</button>
       </div>
     </div>
 
-    <div class="admin-content">
-      <!-- 统计卡片 -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon">👥</div>
-          <div class="stat-info">
-            <h3>{{ users.length }}</h3>
-            <p>总用户数</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">👑</div>
-          <div class="stat-info">
-            <h3>{{ adminUsers.length }}</h3>
-            <p>管理员</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">📊</div>
-          <div class="stat-info">
-            <h3>{{ activeUsers.length }}</h3>
-            <p>活跃用户</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">🆕</div>
-          <div class="stat-info">
-            <h3>{{ newUsersThisMonth.length }}</h3>
-            <p>本月新增</p>
-          </div>
-        </div>
+    <!-- 帖子列表 -->
+    <div class="card post-list-card">
+      <h3>帖子列表</h3>
+      
+      <div v-if="posts.length === 0" class="empty-state">
+        暂无帖子，请发布第一篇帖子
       </div>
 
-      <!-- 用户管理表格 -->
-      <div class="user-management">
-        <div class="section-header">
-          <h2>用户管理</h2>
-          <div class="search-box">
-            <input 
-              v-model="searchQuery" 
-              type="text" 
-              placeholder="搜索用户..."
-              class="search-input"
-            />
-            <button class="search-btn">🔍</button>
+      <div v-else class="post-list">
+        <div v-for="post in posts" :key="post.id" class="post-item">
+          <div class="post-header">
+            <h4 class="post-title" @click="showDetail(post)">{{ post.title }}</h4>
+            <div class="post-actions">
+              <button @click="showDetail(post)" class="btn small-btn">查看</button>
+              <button @click="deletePostById(post.id)" class="btn small-btn danger-btn">删除</button>
+            </div>
           </div>
-        </div>
-
-        <div class="table-container">
-          <table class="user-table">
-            <thead>
-              <tr>
-                <th>头像</th>
-                <th>用户名</th>
-                <th>邮箱</th>
-                <th>角色</th>
-                <th>状态</th>
-                <th>注册时间</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="user in filteredUsers" :key="user.id" class="user-row">
-                <td>
-                  <img :src="user.avatar" :alt="user.name" class="user-avatar" />
-                </td>
-                <td>{{ user.name }}</td>
-                <td>{{ user.email }}</td>
-                <td>
-                  <span :class="['role-tag', user.role]">
-                    {{ user.role === 'admin' ? '管理员' : '普通用户' }}
-                  </span>
-                </td>
-                <td>
-                  <span :class="['status-tag', user.status]">
-                    {{ user.status === 'active' ? '活跃' : '非活跃' }}
-                  </span>
-                </td>
-                <td>{{ formatDate(user.createdAt) }}</td>
-                <td class="actions">
-                  <button 
-                    @click="editUser(user)" 
-                    class="action-btn edit"
-                    title="编辑用户"
-                  >
-                    ✏️
-                  </button>
-                  <button 
-                    @click="toggleUserRole(user)" 
-                    :class="['action-btn', user.role === 'admin' ? 'demote' : 'promote']"
-                    :title="user.role === 'admin' ? '取消管理员' : '设为管理员'"
-                  >
-                    {{ user.role === 'admin' ? '👤' : '👑' }}
-                  </button>
-                  <button 
-                    @click="deleteUser(user)" 
-                    class="action-btn delete"
-                    title="删除用户"
-                  >
-                    🗑️
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="post-meta">
+            <span>作者: {{ post.userName || '匿名' }}</span>
+            <span>发布时间: {{ post.createTime || '未知' }}</span>
+            <span v-if="post.likeCount !== undefined">点赞: {{ post.likeCount }}</span>
+          </div>
+          <div class="post-preview">{{ post.content ? (post.content.length > 100 ? post.content.substring(0, 100) + '...' : post.content) : '无内容' }}</div>
         </div>
       </div>
-
-      <!-- 系统设置 -->
-      <div class="system-settings">
-        <h2>系统设置</h2>
-        <div class="settings-grid">
-          <div class="setting-card">
-            <h3>用户注册设置</h3>
-            <div class="setting-item">
-              <label>
-                <input type="checkbox" v-model="settings.allowRegistration" />
-                允许新用户注册
-              </label>
-            </div>
-            <div class="setting-item">
-              <label>
-                <input type="checkbox" v-model="settings.requireEmailVerification" />
-                需要邮箱验证
-              </label>
-            </div>
-          </div>
-
-          <div class="setting-card">
-            <h3>内容管理</h3>
-            <div class="setting-item">
-              <label>
-                <input type="checkbox" v-model="settings.autoModerateContent" />
-                自动内容审核
-              </label>
-            </div>
-            <div class="setting-item">
-              <label>
-                <input type="checkbox" v-model="settings.allowFileUpload" />
-                允许文件上传
-              </label>
-            </div>
-          </div>
-
-          <div class="setting-card">
-            <h3>通知设置</h3>
-            <div class="setting-item">
-              <label>
-                <input type="checkbox" v-model="settings.emailNotifications" />
-                邮件通知
-              </label>
-            </div>
-            <div class="setting-item">
-              <label>
-                <input type="checkbox" v-model="settings.pushNotifications" />
-                推送通知
-              </label>
-            </div>
-          </div>
-        </div>
-        <button @click="saveSettings" class="save-btn">保存设置</button>
+      
+      <!-- 分页 -->
+      <div class="pagination">
+        <button :disabled="page === 1" @click="prevPage" class="btn page-btn">上一页</button>
+        <span class="page-info">第 {{ page }} 页</span>
+        <button :disabled="!hasMore" @click="nextPage" class="btn page-btn">下一页</button>
       </div>
     </div>
 
-    <!-- 编辑用户模态框 -->
-    <div v-if="showEditModal" class="modal-overlay" @click="closeEditModal">
-      <div class="modal-content" @click.stop>
-        <h3>编辑用户</h3>
-        <form @submit.prevent="saveUserEdit">
-          <div class="form-group">
-            <label>用户名</label>
-            <input v-model="editingUser.name" type="text" required />
+    <!-- 帖子详情弹窗 -->
+    <div v-if="detailVisible" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>{{ detailPost?.title }}</h3>
+          <button @click="detailVisible = false" class="close-btn">&times;</button>
           </div>
-          <div class="form-group">
-            <label>邮箱</label>
-            <input v-model="editingUser.email" type="email" required />
+        <div class="post-meta detail-meta">
+          <span>作者: {{ detailPost?.userName || '匿名' }}</span>
+          <span>发布时间: {{ detailPost?.createTime || '未知' }}</span>
           </div>
-          <div class="form-group">
-            <label>角色</label>
-            <select v-model="editingUser.role">
-              <option value="user">普通用户</option>
-              <option value="admin">管理员</option>
-            </select>
+        <div class="post-content detail-content">
+          {{ detailPost?.content || '无内容' }}
           </div>
-          <div class="form-group">
-            <label>状态</label>
-            <select v-model="editingUser.status">
-              <option value="active">活跃</option>
-              <option value="inactive">非活跃</option>
-            </select>
+        <div class="modal-footer">
+          <button @click="detailVisible = false" class="btn">关闭</button>
+          <button @click="deleteAndClose(detailPost?.id)" class="btn danger-btn">删除帖子</button>
           </div>
-          <div class="modal-actions">
-            <button type="button" @click="closeEditModal" class="cancel-btn">取消</button>
-            <button type="submit" class="save-btn">保存</button>
-          </div>
-        </form>
       </div>
     </div>
   </div>
 </template>
 
+<script setup>
+import { ref, onMounted } from 'vue'
+import { createPost, getPostList, getPostDetail, deletePost } from '@/api/community'
+import { useUserStore } from '@/stores/user'
+
+const title = ref('')
+const content = ref('')
+const posts = ref([])
+const page = ref(1)
+const size = ref(5)
+const hasMore = ref(true)
+const userStore = useUserStore()
+
+const detailVisible = ref(false)
+const detailPost = ref(null)
+
+const fetchPosts = async () => {
+  try {
+    const res = await getPostList({ page: page.value, size: size.value })
+    if (res.data && Array.isArray(res.data.records)) {
+      posts.value = res.data.records
+      hasMore.value = res.data.records.length === size.value
+    }
+  } catch (error) {
+    console.error('获取帖子列表失败:', error)
+    // 如果API调用失败，使用示例数据
+    posts.value = [
+      {
+        id: 1,
+        title: '示例帖子 1',
+        content: '这是一个示例帖子内容，API调用失败时显示',
+        userName: '测试用户',
+        createTime: '2024-01-01 12:00:00'
+      },
+      {
+        id: 2,
+        title: '示例帖子 2',
+        content: '这是另一个示例帖子内容，用于测试展示',
+        userName: '测试用户',
+        createTime: '2024-01-02 12:00:00'
+      }
+    ]
+  }
+}
+
+const handlePost = async () => {
+  if (!title.value || !content.value) {
+    alert('标题和内容不能为空')
+    return
+  }
+  
+  try {
+    const res = await createPost({
+      title: title.value,
+      content: content.value,
+      userId: userStore.userId
+    })
+    
+    if (res.data && res.data.id) {
+      alert('发帖成功')
+      title.value = ''
+      content.value = ''
+      fetchPosts()
+    }
+  } catch (error) {
+    console.error('发帖失败:', error)
+    alert('发帖失败，请稍后重试')
+  }
+}
+
+const deletePostById = async (id) => {
+  if (!confirm('确定要删除该帖子吗？此操作不可恢复')) return
+  
+  try {
+    const res = await deletePost(id)
+    if (res.data && res.data === true) {
+      alert('删除成功')
+      fetchPosts()
+    } else {
+      alert('删除失败')
+    }
+  } catch (error) {
+    console.error('删除帖子失败:', error)
+    alert('删除失败，请稍后重试')
+  }
+}
+
+const showDetail = async (post) => {
+  try {
+    const res = await getPostDetail(post.id)
+    if (res.data) {
+      detailPost.value = res.data
+      detailVisible.value = true
+    }
+  } catch (error) {
+    console.error('获取帖子详情失败:', error)
+    // 如果获取详情失败，直接显示列表中的数据
+    detailPost.value = post
+    detailVisible.value = true
+  }
+}
+
+const deleteAndClose = async (id) => {
+  if (!id) return
+  await deletePostById(id)
+  detailVisible.value = false
+}
+
+const prevPage = () => {
+  if (page.value > 1) {
+    page.value--
+    fetchPosts()
+  }
+}
+
+const nextPage = () => {
+  if (hasMore.value) {
+    page.value++
+    fetchPosts()
+  }
+}
+
+onMounted(fetchPosts)
+</script>
+
 <style scoped>
-.admin-container {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
-}
-
-.admin-header {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 15px;
-  padding: 20px;
-  margin-bottom: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-.admin-header h1 {
-  margin: 0;
-  color: #333;
-  font-size: 2rem;
-}
-
-.admin-info {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.role-badge {
-  background: linear-gradient(45deg, #ff6b6b, #ee5a24);
-  color: white;
-  padding: 5px 15px;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-weight: bold;
-}
-
-.admin-content {
-  max-width: 1200px;
+.manage-container {
+  max-width: 800px;
   margin: 0 auto;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.stat-card {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 15px;
-  padding: 25px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
-}
-
-.stat-card:hover {
-  transform: translateY(-5px);
-}
-
-.stat-icon {
-  font-size: 2.5rem;
-  background: linear-gradient(45deg, #667eea, #764ba2);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.stat-info h3 {
-  margin: 0;
-  font-size: 2rem;
-  color: #333;
-}
-
-.stat-info p {
-  margin: 5px 0 0 0;
-  color: #666;
-}
-
-.user-management {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 15px;
-  padding: 25px;
-  margin-bottom: 30px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.section-header h2 {
-  margin: 0;
-  color: #333;
-}
-
-.search-box {
-  display: flex;
-  gap: 10px;
-}
-
-.search-input {
-  padding: 10px 15px;
-  border: 2px solid #e1e5e9;
-  border-radius: 25px;
-  outline: none;
-  width: 250px;
-  transition: border-color 0.3s ease;
-}
-
-.search-input:focus {
-  border-color: #667eea;
-}
-
-.search-btn {
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  cursor: pointer;
-  transition: background 0.3s ease;
-}
-
-.search-btn:hover {
-  background: #5a6fd8;
-}
-
-.table-container {
-  overflow-x: auto;
-}
-
-.user-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
-
-.user-table th,
-.user-table td {
-  padding: 15px;
-  text-align: left;
-  border-bottom: 1px solid #e1e5e9;
-}
-
-.user-table th {
-  background: #f8f9fa;
-  font-weight: 600;
-  color: #333;
-}
-
-.user-row:hover {
-  background: #f8f9fa;
-}
-
-.user-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.role-tag {
-  padding: 5px 12px;
-  border-radius: 15px;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-.role-tag.admin {
-  background: #ff6b6b;
-  color: white;
-}
-
-.role-tag.user {
-  background: #51cf66;
-  color: white;
-}
-
-.status-tag {
-  padding: 5px 12px;
-  border-radius: 15px;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-.status-tag.active {
-  background: #51cf66;
-  color: white;
-}
-
-.status-tag.inactive {
-  background: #868e96;
-  color: white;
-}
-
-.actions {
-  display: flex;
-  gap: 8px;
-}
-
-.action-btn {
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 5px;
-  border-radius: 5px;
-  transition: background 0.3s ease;
-}
-
-.action-btn:hover {
-  background: #e9ecef;
-}
-
-.action-btn.edit:hover {
-  background: #fff3cd;
-}
-
-.action-btn.promote:hover {
-  background: #d1ecf1;
-}
-
-.action-btn.demote:hover {
-  background: #f8d7da;
-}
-
-.action-btn.delete:hover {
-  background: #f8d7da;
-}
-
-.system-settings {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 15px;
-  padding: 25px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-.system-settings h2 {
-  margin: 0 0 20px 0;
-  color: #333;
-}
-
-.settings-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.setting-card {
-  background: #f8f9fa;
-  border-radius: 10px;
   padding: 20px;
 }
 
-.setting-card h3 {
-  margin: 0 0 15px 0;
+h2 {
+  text-align: center;
+  margin-bottom: 20px;
   color: #333;
 }
 
-.setting-item {
+.card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.post-form-card h3, .post-list-card h3 {
+  margin-top: 0;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
   margin-bottom: 15px;
 }
 
-.setting-item label {
+.post-form {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  color: #555;
+  flex-direction: column;
+  gap: 15px;
 }
 
-.setting-item input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  accent-color: #667eea;
-}
-
-.save-btn {
-  background: linear-gradient(45deg, #667eea, #764ba2);
-  color: white;
-  border: none;
-  padding: 12px 30px;
-  border-radius: 25px;
-  cursor: pointer;
+.input-field, .textarea-field {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
   font-size: 1rem;
-  font-weight: 500;
-  transition: transform 0.3s ease;
+  box-sizing: border-box;
 }
 
-.save-btn:hover {
+.textarea-field {
+  resize: vertical;
+}
+
+.btn {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.primary-btn {
+  background-color: #409eff;
+  color: white;
+  padding: 10px 20px;
+}
+
+.primary-btn:hover {
+  background-color: #3a8ee6;
+}
+
+.small-btn {
+  padding: 5px 10px;
+  font-size: 0.8rem;
+}
+
+.danger-btn {
+  background-color: #f56c6c;
+  color: white;
+}
+
+.danger-btn:hover {
+  background-color: #e64242;
+}
+
+.page-btn {
+  background-color: #f2f6fc;
+  color: #606266;
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.post-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.post-item {
+  border: 1px solid #eee;
+  border-radius: 6px;
+  padding: 15px;
+  background: #f9f9f9;
+  transition: transform 0.2s;
+}
+
+.post-item:hover {
   transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* 模态框样式 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+.post-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.post-title {
+  margin: 0;
+  cursor: pointer;
+  color: #409eff;
+}
+
+.post-title:hover {
+  text-decoration: underline;
+}
+
+.post-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.post-meta {
+  display: flex;
+  gap: 15px;
+  color: #909399;
+  font-size: 0.8rem;
+  margin-bottom: 10px;
+}
+
+.post-preview {
+  color: #606266;
+  font-size: 0.9rem;
+}
+
+.pagination {
+  margin-top: 20px;
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  gap: 15px;
+}
+
+.page-info {
+  color: #606266;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 30px;
+  color: #909399;
+  font-style: italic;
+}
+
+.modal {
+  position: fixed;
+  left: 0; top: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
 }
 
 .modal-content {
-  background: white;
-  border-radius: 15px;
-  padding: 30px;
-  width: 90%;
-  max-width: 500px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-}
-
-.modal-content h3 {
-  margin: 0 0 20px 0;
-  color: #333;
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 5px;
-  color: #555;
-  font-weight: 500;
-}
-
-.form-group input,
-.form-group select {
-  width: 100%;
-  padding: 10px;
-  border: 2px solid #e1e5e9;
+  background: #fff;
+  padding: 0;
   border-radius: 8px;
-  outline: none;
-  transition: border-color 0.3s ease;
+  min-width: 300px;
+  width: 70%;
+  max-width: 700px;
+  max-height: 80vh;
+  overflow: auto;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
 }
 
-.form-group input:focus,
-.form-group select:focus {
-  border-color: #667eea;
-}
-
-.modal-actions {
+.modal-header {
   display: flex;
-  gap: 15px;
-  justify-content: flex-end;
-  margin-top: 20px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
 }
 
-.cancel-btn {
-  background: #6c757d;
-  color: white;
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.close-btn {
+  background: none;
   border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
+  font-size: 1.5rem;
   cursor: pointer;
-  transition: background 0.3s ease;
+  color: #909399;
 }
 
-.cancel-btn:hover {
-  background: #5a6268;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .admin-header {
-    flex-direction: column;
-    gap: 15px;
-    text-align: center;
+.detail-meta {
+  padding: 10px 20px;
+  border-bottom: 1px solid #f0f0f0;
   }
   
-  .stats-grid {
-    grid-template-columns: 1fr;
+.detail-content {
+  padding: 20px;
+  line-height: 1.6;
+  white-space: pre-line;
+  min-height: 150px;
   }
   
-  .section-header {
-    flex-direction: column;
-    gap: 15px;
-  }
-  
-  .search-box {
-    width: 100%;
-  }
-  
-  .search-input {
-    width: 100%;
-  }
-  
-  .settings-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .user-table {
-    font-size: 0.9rem;
-  }
-  
-  .user-table th,
-  .user-table td {
-    padding: 10px 5px;
-  }
+.modal-footer {
+  padding: 15px 20px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 </style>

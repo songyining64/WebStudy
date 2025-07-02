@@ -28,82 +28,137 @@ public class PostLikeServiceImpl implements PostLikeService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean likePost(Long postId, Long userId) {
-        // 检查是否已经点赞
-        if (hasLiked(postId, userId)) {
-            return false;
-        }
+        logger.info("尝试点赞帖子，帖子ID: {}, 用户ID: {}", postId, userId);
 
-        // 创建新的点赞记录
-        PostLike postLike = new PostLike();
-        postLike.setPostId(postId);
-        postLike.setUserId(userId);
-        postLike.setCreateTime(LocalDateTime.now());
+        try {
+            // 参数验证
+            if (postId == null || userId == null) {
+                logger.error("点赞失败：帖子ID或用户ID为空");
+                return false;
+            }
 
-        // 更新帖子点赞数
-        Post post = postMapper.selectById(postId);
-        logger.info("点赞前帖子信息: {}", post);
+            // 检查是否已经点赞
+            if (hasLiked(postId, userId)) {
+                logger.warn("用户 {} 已经点赞过帖子 {}", userId, postId);
+                return false;
+            }
 
-        if (post != null) {
+            // 检查帖子是否存在
+            Post post = postMapper.selectById(postId);
+            if (post == null) {
+                logger.error("点赞失败：帖子ID {} 不存在", postId);
+                return false;
+            }
+
+            logger.info("点赞前帖子信息: {}", post);
+
+            // 创建新的点赞记录
+            PostLike postLike = new PostLike();
+            postLike.setPostId(postId);
+            postLike.setUserId(userId);
+            postLike.setCreateTime(LocalDateTime.now());
+
+            // 更新帖子点赞数
             int currentLikes = post.getLikeCount() == null ? 0 : post.getLikeCount();
             post.setLikeCount(currentLikes + 1);
             int updateResult = postMapper.updateById(post);
             logger.info("更新帖子点赞数结果: {}, 更新后的点赞数: {}", updateResult, post.getLikeCount());
-        } else {
-            logger.error("未找到ID为{}的帖子", postId);
-            return false;
+
+            int insertResult = postLikeMapper.insert(postLike);
+            logger.info("插入点赞记录结果: {}", insertResult);
+
+            return true;
+        } catch (Exception e) {
+            logger.error("点赞帖子时发生异常，帖子ID: {}, 用户ID: {}", postId, userId, e);
+            throw e; // 重新抛出异常以便事务回滚
         }
-
-        int insertResult = postLikeMapper.insert(postLike);
-        logger.info("插入点赞记录结果: {}", insertResult);
-
-        return true;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean unlikePost(Long postId, Long userId) {
-        // 检查是否已经点赞
-        if (!hasLiked(postId, userId)) {
-            return false;
+        logger.info("尝试取消点赞帖子，帖子ID: {}, 用户ID: {}", postId, userId);
+
+        try {
+            // 参数验证
+            if (postId == null || userId == null) {
+                logger.error("取消点赞失败：帖子ID或用户ID为空");
+                return false;
+            }
+
+            // 检查帖子是否存在
+            Post post = postMapper.selectById(postId);
+            if (post == null) {
+                logger.error("取消点赞失败：帖子ID {} 不存在", postId);
+                return false;
+            }
+
+            // 检查是否已经点赞
+            if (!hasLiked(postId, userId)) {
+                logger.warn("用户 {} 尚未点赞帖子 {}", userId, postId);
+                return false;
+            }
+
+            logger.info("取消点赞前帖子信息: {}", post);
+
+            // 更新帖子点赞数
+            if (post.getLikeCount() != null && post.getLikeCount() > 0) {
+                post.setLikeCount(post.getLikeCount() - 1);
+                int updateResult = postMapper.updateById(post);
+                logger.info("更新帖子点赞数结果: {}, 更新后的点赞数: {}", updateResult, post.getLikeCount());
+            } else {
+                logger.warn("帖子 {} 的点赞数已为0或为null", postId);
+            }
+
+            LambdaQueryWrapper<PostLike> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(PostLike::getPostId, postId)
+                    .eq(PostLike::getUserId, userId);
+
+            int deleteResult = postLikeMapper.delete(wrapper);
+            logger.info("删除点赞记录结果: {}", deleteResult);
+
+            return deleteResult > 0;
+        } catch (Exception e) {
+            logger.error("取消点赞帖子时发生异常，帖子ID: {}, 用户ID: {}", postId, userId, e);
+            throw e; // 重新抛出异常以便事务回滚
         }
-
-        // 更新帖子点赞数
-        Post post = postMapper.selectById(postId);
-        logger.info("取消点赞前帖子信息: {}", post);
-
-        if (post != null && post.getLikeCount() != null && post.getLikeCount() > 0) {
-            post.setLikeCount(post.getLikeCount() - 1);
-            int updateResult = postMapper.updateById(post);
-            logger.info("更新帖子点赞数结果: {}, 更新后的点赞数: {}", updateResult, post.getLikeCount());
-        } else {
-            logger.error("未找到ID为{}的帖子或点赞数已为0", postId);
-            return false;
-        }
-
-        LambdaQueryWrapper<PostLike> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(PostLike::getPostId, postId)
-                .eq(PostLike::getUserId, userId);
-
-        int deleteResult = postLikeMapper.delete(wrapper);
-        logger.info("删除点赞记录结果: {}", deleteResult);
-
-        return true;
     }
 
     @Override
     public boolean hasLiked(Long postId, Long userId) {
-        LambdaQueryWrapper<PostLike> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(PostLike::getPostId, postId)
-                .eq(PostLike::getUserId, userId);
+        try {
+            if (postId == null || userId == null) {
+                logger.warn("检查点赞状态时参数无效: postId={}, userId={}", postId, userId);
+                return false;
+            }
 
-        return postLikeMapper.selectCount(wrapper) > 0;
+            LambdaQueryWrapper<PostLike> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(PostLike::getPostId, postId)
+                    .eq(PostLike::getUserId, userId);
+
+            long count = postLikeMapper.selectCount(wrapper);
+            logger.info("检查点赞状态: postId={}, userId={}, 结果={}", postId, userId, count > 0);
+            return count > 0;
+        } catch (Exception e) {
+            logger.error("检查点赞状态时发生异常，帖子ID: {}, 用户ID: {}", postId, userId, e);
+            return false;
+        }
     }
 
     @Override
     public Long getLikeCount(Long postId) {
-        LambdaQueryWrapper<PostLike> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(PostLike::getPostId, postId);
+        try {
+            if (postId == null) {
+                return 0L;
+            }
 
-        return postLikeMapper.selectCount(wrapper);
+            LambdaQueryWrapper<PostLike> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(PostLike::getPostId, postId);
+
+            return postLikeMapper.selectCount(wrapper);
+        } catch (Exception e) {
+            logger.error("获取点赞数量时发生异常，帖子ID: {}", postId, e);
+            return 0L;
+        }
     }
 }

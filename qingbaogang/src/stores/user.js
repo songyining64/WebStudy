@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import defaultAvatarUrl from '@/assets/default-avatar.png';
 
 export const useUserStore = defineStore('user', () => {
@@ -26,6 +26,11 @@ export const useUserStore = defineStore('user', () => {
     const isAdmin = ref(savedIsAdmin === 'true' || false);
     const birthDate = ref(savedBirthDate || '');
     const userId = ref(savedUserId || '');
+
+    // 计算属性：用户是否已登录
+    const isLoggedIn = computed(() => {
+        return !!userId.value; // 如果 userId 存在且不为空，则认为用户已登录
+    });
 
     // 批量更新 localStorage
     function updateLocalStorage(updates) {
@@ -137,6 +142,7 @@ export const useUserStore = defineStore('user', () => {
         isAdmin,
         birthDate,
         userId,
+        isLoggedIn,
         updateUser,
         clearUserData
     };
