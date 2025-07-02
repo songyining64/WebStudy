@@ -2,12 +2,14 @@ package com.cupk.controller;
 
 import com.cupk.service.PostLikeService;
 import com.cupk.service.Result;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/post-likes")
 public class PostLikeController {
-
+    private static final Logger logger = LoggerFactory.getLogger(PostLikeController.class);
     private final PostLikeService postLikeService;
 
     public PostLikeController(PostLikeService postLikeService) {
@@ -23,11 +25,24 @@ public class PostLikeController {
      */
     @PostMapping("/{postId}/users/{userId}")
     public Result<Boolean> likePost(@PathVariable Long postId, @PathVariable Long userId) {
-        boolean success = postLikeService.likePost(postId, userId);
-        if (success) {
-            return Result.success(true);
-        } else {
-            return Result.error("您已经点赞过该帖子");
+        logger.info("收到点赞请求: postId={}, userId={}", postId, userId);
+
+        // 参数验证
+        if (postId == null || userId == null) {
+            logger.warn("点赞失败: 帖子ID或用户ID为空");
+            return Result.error("帖子ID或用户ID不能为空");
+        }
+
+        try {
+            boolean success = postLikeService.likePost(postId, userId);
+            if (success) {
+                return Result.success(true);
+            } else {
+                return Result.error("您已经点赞过该帖子");
+            }
+        } catch (Exception e) {
+            logger.error("点赞帖子时发生异常", e);
+            return Result.error("点赞失败，请稍后重试");
         }
     }
 
@@ -40,11 +55,24 @@ public class PostLikeController {
      */
     @DeleteMapping("/{postId}/users/{userId}")
     public Result<Boolean> unlikePost(@PathVariable Long postId, @PathVariable Long userId) {
-        boolean success = postLikeService.unlikePost(postId, userId);
-        if (success) {
-            return Result.success(true);
-        } else {
-            return Result.error("您还没有点赞该帖子");
+        logger.info("收到取消点赞请求: postId={}, userId={}", postId, userId);
+
+        // 参数验证
+        if (postId == null || userId == null) {
+            logger.warn("取消点赞失败: 帖子ID或用户ID为空");
+            return Result.error("帖子ID或用户ID不能为空");
+        }
+
+        try {
+            boolean success = postLikeService.unlikePost(postId, userId);
+            if (success) {
+                return Result.success(true);
+            } else {
+                return Result.error("您还没有点赞该帖子");
+            }
+        } catch (Exception e) {
+            logger.error("取消点赞帖子时发生异常", e);
+            return Result.error("取消点赞失败，请稍后重试");
         }
     }
 
@@ -57,8 +85,20 @@ public class PostLikeController {
      */
     @GetMapping("/{postId}/users/{userId}/status")
     public Result<Boolean> checkLikeStatus(@PathVariable Long postId, @PathVariable Long userId) {
-        boolean hasLiked = postLikeService.hasLiked(postId, userId);
-        return Result.success(hasLiked);
+        logger.info("检查点赞状态: postId={}, userId={}", postId, userId);
+
+        // 参数验证
+        if (postId == null || userId == null) {
+            return Result.error("帖子ID或用户ID不能为空");
+        }
+
+        try {
+            boolean hasLiked = postLikeService.hasLiked(postId, userId);
+            return Result.success(hasLiked);
+        } catch (Exception e) {
+            logger.error("检查点赞状态时发生异常", e);
+            return Result.error("获取点赞状态失败，请稍后重试");
+        }
     }
 
     /**
@@ -69,7 +109,19 @@ public class PostLikeController {
      */
     @GetMapping("/{postId}/count")
     public Result<Long> getLikeCount(@PathVariable Long postId) {
-        Long count = postLikeService.getLikeCount(postId);
-        return Result.success(count);
+        logger.info("获取点赞数量: postId={}", postId);
+
+        // 参数验证
+        if (postId == null) {
+            return Result.error("帖子ID不能为空");
+        }
+
+        try {
+            Long count = postLikeService.getLikeCount(postId);
+            return Result.success(count);
+        } catch (Exception e) {
+            logger.error("获取点赞数量时发生异常", e);
+            return Result.error("获取点赞数量失败，请稍后重试");
+        }
     }
 }

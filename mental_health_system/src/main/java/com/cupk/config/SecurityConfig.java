@@ -48,14 +48,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // 明确指定允许的前端域名
-        configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:5173" // Vite默认端口
-        ));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L); // 预检请求有效期一小时
+        configuration.addAllowedOriginPattern("*"); // 允许所有来源
+        configuration.addAllowedHeader("*"); // 允许所有头
+        configuration.addAllowedMethod("*"); // 允许所有方法
+        configuration.setMaxAge(3600L);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

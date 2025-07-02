@@ -1,207 +1,235 @@
 <template>
-  <div class="card">
-    <h2 class="card-title">
-      <span class="icon">🤖</span> 聊天机器人
-    </h2>
-    <div class="chatbot-section">
-      <div class="chat-history">
-        <div v-for="(msg, idx) in messages" :key="idx" :class="['chatbot-bubble', msg.role]">
+  <div class="chatbot-container">
+    <div class="chat-header">情波港·AI柴郡</div>
+    <div class="chat-messages" ref="messagesRef">
+      <div v-for="(msg, idx) in messages" :key="idx" :class="['chat-msg', msg.role]">
+        <div class="avatar">
+          <img v-if="msg.role==='ai'" src="/src/assets/cheshire.png" alt="AI" />
+          <img v-else src="/src/assets/default-avatar.png" alt="用户" />
+        </div>
+        <div class="bubble">
           {{ msg.content }}
         </div>
       </div>
-      <div class="chat-input-row">
-        <input
-            v-model="userInput"
-            @keyup.enter="sendMessage"
-            placeholder="请输入你的问题..."
-            class="chat-input"
-            :disabled="loading"
-        />
-        <button @click="sendMessage" :disabled="loading || !userInput.trim()" class="send-btn">
-          {{ loading ? '发送中...' : '发送' }}
-        </button>
-      </div>
+    </div>
+    <div class="chat-input-area">
+      <input
+          v-model="input"
+          @keyup.enter="sendMsg"
+          class="chat-input"
+          placeholder="请输入您的问题..."
+          maxlength="200"
+      />
+      <button @click="sendMsg" class="send-btn">发送</button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
-import { request } from '@/utils/request'
-import { useUserStore } from '@/stores/user'
-import { storeToRefs } from 'pinia'
-
-const userStore = useUserStore()
-const refs = storeToRefs(userStore)
-console.log('userStore keys:', Object.keys(userStore))
-console.log('storeToRefs(userStore):', refs)
-console.log('userId:', refs.userId)
-
-const sessionId = ref('')
-const userInput = ref('')
+import { ref, nextTick } from 'vue';
+const isEvaluating = ref(false); // 是否在情绪评估流程
+const questions = ref([]); // 问卷题目
+const currentQuestionIndex = ref(0);
+const answers = ref([]);
+const evaluationResult = ref(null); // 评估结果
+const input = ref('');
 const messages = ref([
-  { role: 'bot', content: '欢迎来到心理健康助手，有什么可以帮您？' }
-])
-const loading = ref(false)
+  { role: 'ai', content: '您好，我是情波港AI柴郡，有什么可以帮您？' }
+]);
+const messagesRef = ref(null);
 
-// 滚动到底部
-const scrollToBottom = () => {
-  nextTick(() => {
-    const history = document.querySelector('.chat-history')
-    if (history) history.scrollTop = history.scrollHeight
-  })
+async function startEvaluation() {
+  isEvaluating.value = true;
+  // 获取题目（从后端）
+  const res = await fetch('/api/questionnaire');
+  questions.value = await res.json();
+  currentQuestionIndex.value = 0;
+  answers.value = [];
+  askNextQuestion();
 }
 
-// 获取新会话ID
-const getSessionId = async () => {
-  try {
-    const res = await request.get('/api/ai/session/new')
-    if (res.code === 200) sessionId.value = res.data
-  } catch (err) {
-    messages.value.push({ role: 'bot', content: '无法获取会话ID，请刷新页面重试' })
+function askNextQuestion() {
+  if (currentQuestionIndex.value < questions.value.length) {
+    const q = questions.value[currentQuestionIndex.value];
+    messages.value.push({ role: 'ai', content: q.text + (q.options ? '\n' + q.options.join(' / ') : '') });
+  } else {
+    evaluateEmotion();
   }
 }
 
-onMounted(async () => {
-  await getSessionId()
-  scrollToBottom()
-})
+async function sendMsg() {
+  const text = input.value.trim();
+  if (!text) return;
+  messages.value.push({ role: 'user', content: text });
+  input.value = '';
 
-const sendMessage = async () => {
-  const content = userInput.value.trim()
-  if (!content || !sessionId.value) return
-  if (!refs.userId || !refs.userId.value) {
-    messages.value.push({ role: 'bot', content: '未检测到用户ID，请重新登录。' })
-    loading.value = false
-    return
+  // 进入问卷流程
+  if (!isEvaluating.value && text === '可以') {
+    startEvaluation();
+    return;
   }
-  messages.value.push({ role: 'user', content })
-  userInput.value = ''
-  loading.value = true
-  scrollToBottom()
+
+  // 问卷流程中
+  if (isEvaluating.value) {
+    answers.value.push(text);
+    currentQuestionIndex.value++;
+    askNextQuestion();
+    return;
+  }
+
+  // 普通AI聊天
   try {
-    console.log('chat request params:', {
-      message: content,
-      sessionId: sessionId.value,
-      userId: refs.userId.value
-    })
-    const res = await request.post('/api/ai/chat', {
-      message: content,
-      sessionId: sessionId.value,
-      userId: refs.userId.value
-    })
-    let aiReply = ''
-    if (res.code === 200) {
-      // 1. 如果后端返回的 data 是对象（不是字符串），直接取 content
-      if (res.data && typeof res.data === 'object' && res.data.choices) {
-        aiReply = res.data.choices[0]?.message?.content || '[AI无回复]'
-      }
-      // 2. 如果 data 是 JSON 字符串，先解析再取 content
-      else if (typeof res.data === 'string' && res.data.trim().startsWith('{')) {
-        try {
-          const parsed = JSON.parse(res.data)
-          aiReply = parsed.choices?.[0]?.message?.content || res.data
-        } catch (e) {
-          aiReply = res.data
-        }
-      }
-      // 3. 否则直接显示
-      else {
-        aiReply = res.data
-      }
-      // 去掉 content 前面的 JSON 情绪描述
-      if (typeof aiReply === 'string' && aiReply.startsWith('🌡️')) {
-        aiReply = aiReply.replace(/^🌡️[^{]*\{.*?\}\s*/s, '').trim()
-      }
-      messages.value.push({ role: 'bot', content: aiReply })
+    const res = await fetch('/api/ai/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, userId: 1, sessionId: 'default' }) // userId/sessionId按实际传
+    });
+    const data = await res.json();
+    if (data.code === 200) {
+      messages.value.push({ role: 'ai', content: data.data });
     } else {
-      messages.value.push({ role: 'bot', content: res.msg || 'AI服务异常' })
+      messages.value.push({ role: 'ai', content: data.msg || 'AI服务异常' });
     }
-  } catch (err) {
-    // 优先显示后端返回的msg或message字段
-    const msg = err?.message || err?.msg || err?.data?.msg || 'AI服务异常';
-    messages.value.push({ role: 'bot', content: msg });
-  } finally {
-    loading.value = false
-    scrollToBottom()
+    scrollToBottom();
+  } catch (e) {
+    messages.value.push({ role: 'ai', content: 'AI服务暂时不可用，请稍后再试。' });
+    scrollToBottom();
   }
 }
+
+function scrollToBottom() {
+  nextTick(() => {
+    if (messagesRef.value) {
+      messagesRef.value.scrollTop = messagesRef.value.scrollHeight;
+    }
+  });
+}
+
+async function evaluateEmotion() {
+  isEvaluating.value = false;
+  // 提交到后端评估
+  const res = await fetch('/api/questionnaire/evaluate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ answers: answers.value })
+  });
+  const data = await res.json();
+  evaluationResult.value = data.result;
+  messages.value.push({ role: 'ai', content: data.result });
+
+  // 可选：记录到后端
+  fetch('/api/emotion-record/record', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      userId: 1, // 必须有且为数字
+      answers: answers.value, // 建议用 JSON.stringify(answers.value)
+      score: data.score,
+      result: data.result,
+      emotionType: data.result // 或自定义类型
+    })
+  });
+}
+
+messages.value.push({
+  role: 'ai',
+  content: '您好，我想问您几个问题，帮您了解下当前的情绪状态，可以吗？（回复"可以"开始）'
+});
 </script>
 
 <style scoped>
-.card {
+.chatbot-container {
+  max-width: 420px;
+  margin: 40px auto;
   background: #fff;
   border-radius: 18px;
   box-shadow: 0 6px 32px 0 rgba(52,152,219,0.10), 0 1.5px 6px 0 rgba(44,62,80,0.06);
-  padding: 48px 56px;
-  min-width: 340px;
-  max-width: 420px;
-  margin: 48px auto 0 auto;
-}
-.card-title {
-  font-size: 1.7rem;
-  color: #2980b9;
-  font-weight: 700;
-  margin-bottom: 24px;
-  display: flex;
-  align-items: center;
-}
-.icon {
-  font-size: 1.5em;
-  margin-right: 12px;
-}
-.chatbot-section {
-  margin-top: 18px;
-  font-size: 1.05rem;
-}
-.chat-history {
-  min-height: 180px;
-  max-height: 320px;
-  overflow-y: auto;
-  margin-bottom: 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  height: 540px;
 }
-.chatbot-bubble {
-  display: inline-block;
-  padding: 10px 16px;
-  border-radius: 16px;
-  max-width: 90%;
-  word-break: break-all;
+.chat-header {
+  font-size: 20px;
+  font-weight: bold;
+  padding: 18px 0 12px 0;
+  text-align: center;
+  border-bottom: 1px solid #f0f0f0;
+  letter-spacing: 2px;
 }
-.chatbot-bubble.user {
-  background: #eaf6ff;
-  color: #2980b9;
-  align-self: flex-end;
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 16px;
+  background: #f8fafc;
 }
-.chatbot-bubble.bot {
-  background: #f3f9f6;
-  color: #444;
-  align-self: flex-start;
-}
-.chat-input-row {
+.chat-msg {
   display: flex;
-  gap: 8px;
+  align-items: flex-end;
+  margin-bottom: 16px;
+}
+.chat-msg.user {
+  flex-direction: row-reverse;
+}
+.chat-msg .avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin: 0 8px;
+  background: #eaf2fb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.chat-msg .avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.bubble {
+  max-width: 220px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 15px;
+  line-height: 1.7;
+  word-break: break-all;
+  background: #eaf2fb;
+  color: #222;
+}
+.chat-msg.user .bubble {
+  background: #d0e6fa;
+  color: #222;
+}
+.chat-input-area {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px 18px 16px;
+  border-top: 1px solid #f0f0f0;
+  background: #fff;
 }
 .chat-input {
   flex: 1;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #d0d7de;
-  font-size: 1rem;
+  height: 36px;
+  border: 1px solid #d0e6fa;
+  border-radius: 18px;
+  padding: 0 14px;
+  font-size: 15px;
+  outline: none;
+  margin-right: 10px;
+  background: #f8fafc;
 }
 .send-btn {
-  padding: 0 18px;
-  border-radius: 8px;
-  background: #2980b9;
+  background: #3498db;
   color: #fff;
   border: none;
-  font-weight: 600;
+  border-radius: 18px;
+  padding: 0 18px;
+  height: 36px;
+  font-size: 15px;
   cursor: pointer;
+  transition: background 0.2s;
 }
-.send-btn:disabled {
-  background: #b2bec3;
-  cursor: not-allowed;
+.send-btn:hover {
+  background: #217dbb;
 }
 </style>

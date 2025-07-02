@@ -8,6 +8,8 @@ import com.cupk.entity.User;
 import com.cupk.service.AiConversationService;
 import com.cupk.service.Result;
 import com.cupk.service.UserService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,12 +31,7 @@ public class AiConversationController {
     public Result<String> chat(@RequestBody Map<String, String> payload) {
         String userInput = payload.get("message");
         String sessionId = payload.get("sessionId");
-        Long userId = null;
-        try {
-            userId = Long.valueOf(payload.get("userId"));
-        } catch (Exception e) {
-            return Result.error("用户ID格式错误，请重新登录");
-        }
+        Long userId = Long.valueOf(payload.get("userId"));
         User user = userService.getById(userId);
         if (user == null) {
             return Result.error("用户不存在，请重新登录");
@@ -45,8 +42,20 @@ public class AiConversationController {
         if (sessionId == null || sessionId.trim().isEmpty()) {
             return Result.error("sessionId 不能为空");
         }
-        String aiReply = aiService.chat(sessionId, userInput, userId);
+
+        String aiRawResponse = aiService.chat(sessionId, userInput, userId);
+        String aiReply = extractContentFromJson(aiRawResponse);
         return Result.success(aiReply);
+    }
+
+    private String extractContentFromJson(String json) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(json);
+            return root.path("choices").get(0).path("message").path("content").asText();
+        } catch (Exception e) {
+            return "AI服务异常，请稍后再试。";
+        }
     }
 
     @GetMapping("/history")

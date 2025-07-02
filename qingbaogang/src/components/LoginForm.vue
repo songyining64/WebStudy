@@ -48,20 +48,8 @@
         <a href="#" class="forgot-link" @click.prevent="handleForgotPassword">忘记密码?</a>
       </div>
 
-      <!-- 管理员登录选项 -->
-      <div class="admin-login-section">
-        <label class="admin-checkbox">
-          <input type="checkbox" v-model="isAdminLogin"> 
-          <span class="admin-icon">👑</span>
-          管理员登录
-        </label>
-        <div v-if="isAdminLogin" class="admin-info">
-          <small>管理员可以访问系统管理功能</small>
-        </div>
-      </div>
-
       <button type="submit" class="submit-btn" :disabled="isLoading">
-        <span>{{ isLoading ? '登录中...' : (isAdminLogin ? '管理员登录' : '登 录') }}</span>
+        <span>{{ isLoading ? '登录中...' : '登 录' }}</span>
       </button>
     </form>
 
@@ -123,7 +111,6 @@ export default {
       },
       error: '',
       rememberMe: false,
-      isAdminLogin: false,
       showWelcomeMessage: false,
       showForgotDialog: false,
       forgotEmail: '',
@@ -180,13 +167,15 @@ export default {
           localStorage.setItem('authToken', res.data.token);
           // 新增：保存userId
           localStorage.setItem('userId', res.data.userId);
+          // 保存角色
+          localStorage.setItem('userRole', res.data.role);
+          // 设置isAdmin状态
+          localStorage.setItem('isAdmin', (res.data.role === 'admin').toString());
           // 记住我逻辑
           if (this.rememberMe) {
             localStorage.setItem('rememberedEmail', this.credentials.email);
-            localStorage.setItem('rememberedAdmin', this.isAdminLogin.toString());
           } else {
             localStorage.removeItem('rememberedEmail');
-            localStorage.removeItem('rememberedAdmin');
           }
           // 更新用户store
           const userStore = useUserStore();
@@ -200,7 +189,12 @@ export default {
           });
           console.log('Pinia userId:', userStore.userId)
           await this.$nextTick();
-          await this.$router.push('/home');
+          // 根据角色跳转
+          if (res.data.role === 'admin') {
+            await this.$router.push('/admin');
+          } else {
+            await this.$router.push('/home');
+          }
         } else {
           this.error = res.msg || '用户名或密码错误';
         }
@@ -284,15 +278,10 @@ export default {
   mounted() {
     // 检查是否有记住的登录信息
     const rememberedEmail = localStorage.getItem('rememberedEmail');
-    const rememberedAdmin = localStorage.getItem('rememberedAdmin');
     
     if (rememberedEmail) {
       this.credentials.email = rememberedEmail;
       this.rememberMe = true;
-    }
-    
-    if (rememberedAdmin === 'true') {
-      this.isAdminLogin = true;
     }
   },
   beforeUnmount() {
@@ -397,41 +386,6 @@ export default {
 .forgot-link:hover {
   color: var(--primary-dark);
   text-decoration: underline;
-}
-
-/* 管理员登录样式 */
-.admin-login-section {
-  margin: 20px 0;
-  padding: 15px;
-  background: linear-gradient(135deg, #fff3cd, #ffeaa7);
-  border-radius: 12px;
-  border: 1px solid #ffeaa7;
-}
-
-.admin-checkbox {
-  display: flex;
-  align-items: center;
-  color: #856404;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 15px;
-}
-
-.admin-checkbox input {
-  margin-right: 10px;
-  accent-color: #ff6b6b;
-  transform: scale(1.2);
-}
-
-.admin-icon {
-  margin-right: 8px;
-  font-size: 18px;
-}
-
-.admin-info {
-  margin-top: 8px;
-  color: #856404;
-  font-size: 13px;
 }
 
 .submit-btn {

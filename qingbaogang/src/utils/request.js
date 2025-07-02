@@ -4,9 +4,8 @@ import axios from 'axios';
 import { getAuthToken } from './auth';
 
 // 从环境变量中获取 API 基础路径
-
-// 修改这里，指向你的后端服务
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/mental';
+// 使用相对路径，让Vite代理处理CORS
+const baseURL = import.meta.env.VITE_API_BASE_URL || '';
 
 // 创建 axios 实例
 const instance = axios.create({
@@ -30,6 +29,21 @@ instance.interceptors.request.use(
         // 如果存在 token，添加到请求头
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
+        }
+
+        // 添加用户角色到请求头
+        const role = localStorage.getItem('userRole');
+        if (role) {
+            config.headers['X-User-Role'] = role;
+            // 记录请求发送的角色信息，用于调试
+            console.log('请求头携带角色信息:', role);
+        }
+
+        // 添加Content-Type头
+        if (config.method === 'patch' || config.method === 'post' || config.method === 'put') {
+            if (!config.headers['Content-Type'] && !config.headers.get('Content-Type')) {
+                config.headers['Content-Type'] = 'application/json';
+            }
         }
 
         return config;
@@ -65,11 +79,20 @@ instance.interceptors.response.use(
                     break;
                 case 401:
                     errorMessage = '未授权，请重新登录';
+                    // 清除无效的token和角色信息
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('userRole');
+                    localStorage.removeItem('isAdmin');
                     // 触发全局未授权事件
                     window.dispatchEvent(new CustomEvent('unauthorized'));
                     break;
                 case 403:
                     errorMessage = '禁止访问，权限不足';
+                    // 检查是否需要管理员权限
+                    if (error.config.url.includes('/api/admin')) {
+                        // 可能是用户无管理员权限但尝试访问管理页面
+                        console.error('权限不足，尝试访问管理员接口:', error.config.url);
+                    }
                     break;
                 case 404:
                     errorMessage = '请求资源不存在';
@@ -103,7 +126,7 @@ instance.interceptors.response.use(
 
 // 导出封装后的请求方法
 export const request = {
-    get: (url, params = {}, config = {}) => instance.get(url, { ...config, params }),
+    get: (url, config = {}) => instance.get(url, config),
     post: (url, data = {}, config = {}) => instance.post(url, data, config),
     put: (url, data = {}, config = {}) => instance.put(url, data, config),
     delete: (url, config = {}) => instance.delete(url, config),

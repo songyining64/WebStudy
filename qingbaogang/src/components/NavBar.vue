@@ -12,7 +12,7 @@
       <el-button link @click="$router.push('/resource')">资源推荐</el-button>
       <el-button link @click="$router.push('/community')">社区</el-button>
       <!-- 管理员专用链接 -->
-      <el-button v-if="isAdmin" link @click="$router.push('/manage')">管理控制台</el-button>
+      <el-button v-if="isAdmin" link @click="$router.push('/admin')" type="primary">系统管理</el-button>
     </div>
     <div class="navbar-right">
       <el-dropdown v-if="isLoggedIn" trigger="click" :hide-on-click="false">
@@ -48,8 +48,8 @@
             <el-dropdown-item @click="handleNavigation('/settings')">
               <el-icon><setting /></el-icon> 用户设置
             </el-dropdown-item>
-            <el-dropdown-item v-if="isAdmin" divided @click="handleNavigation('/manage')">
-              <el-icon><management /></el-icon> 管理控制台
+            <el-dropdown-item v-if="isAdmin" divided @click="handleNavigation('/admin')">
+              <el-icon><management /></el-icon> 系统管理
             </el-dropdown-item>
             <el-dropdown-item divided @click="handleLogout">
               <el-icon><switch-button /></el-icon> 退出登录

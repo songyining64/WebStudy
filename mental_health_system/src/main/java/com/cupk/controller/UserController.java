@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import jakarta.servlet.http.HttpServletRequest;
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -25,27 +26,37 @@ public class UserController {
     private MailService mailService;
 
     @GetMapping
-    public List<User> list() {
+    public List<User> list(HttpServletRequest request) {
+        if (!isAdmin(request))
+            throw new RuntimeException("无权限");
         return userService.list();
     }
 
     @GetMapping("/{id}")
-    public User get(@PathVariable Long id) {
+    public User get(@PathVariable Long id, HttpServletRequest request) {
+        if (!isAdmin(request))
+            throw new RuntimeException("无权限");
         return userService.getById(id);
     }
 
     @PostMapping
-    public boolean add(@RequestBody User user) {
+    public boolean add(@RequestBody User user, HttpServletRequest request) {
+        if (!isAdmin(request))
+            throw new RuntimeException("无权限");
         return userService.save(user);
     }
 
     @PutMapping
-    public boolean update(@RequestBody User user) {
+    public boolean update(@RequestBody User user, HttpServletRequest request) {
+        if (!isAdmin(request))
+            throw new RuntimeException("无权限");
         return userService.updateById(user);
     }
 
     @DeleteMapping("/{id}")
-    public boolean delete(@PathVariable Long id) {
+    public boolean delete(@PathVariable Long id, HttpServletRequest request) {
+        if (!isAdmin(request))
+            throw new RuntimeException("无权限");
         return userService.removeById(id);
     }
 
@@ -92,9 +103,7 @@ public class UserController {
     public Result<Map<String, Object>> login(@RequestBody UserLoginDTO dto) {
         try {
             String token = userService.login(dto);
-            // 获取用户信息
-            User user = userService.findByUsername(dto.getUsername());
-            // 封装返回数据
+            User user = userService.findByEmail(dto.getUsername());
             Map<String, Object> data = new HashMap<>();
             data.put("token", token);
             data.put("userId", user.getId());
@@ -142,5 +151,11 @@ public class UserController {
         } catch (RuntimeException e) {
             return Result.error(e.getMessage());
         }
+    }
+
+    // 工具方法：判断是否为管理员
+    private boolean isAdmin(HttpServletRequest request) {
+        String role = request.getHeader("X-User-Role");
+        return "admin".equals(role);
     }
 }

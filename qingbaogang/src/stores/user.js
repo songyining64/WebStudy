@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import defaultAvatarUrl from '@/assets/default-avatar.png';
 
 export const useUserStore = defineStore('user', () => {
@@ -9,7 +9,6 @@ export const useUserStore = defineStore('user', () => {
     const savedEmail = localStorage.getItem('userEmail');
     const savedBio = localStorage.getItem('userBio');
     const savedRole = localStorage.getItem('userRole');
-    const savedIsAdmin = localStorage.getItem('isAdmin');
     const savedBirthDate = localStorage.getItem('userBirthDate');
     const savedUserId = localStorage.getItem('userId');
 
@@ -23,9 +22,18 @@ export const useUserStore = defineStore('user', () => {
     const email = ref(savedEmail || '');
     const bio = ref(savedBio || '');
     const role = ref(savedRole || 'user');
-    const isAdmin = ref(savedIsAdmin === 'true' || false);
     const birthDate = ref(savedBirthDate || '');
     const userId = ref(savedUserId || '');
+
+    // 计算属性：用户是否已登录
+    const isLoggedIn = computed(() => {
+        return !!userId.value; // 如果 userId 存在且不为空，则认为用户已登录
+    });
+
+    // 计算属性：用户是否是管理员
+    const isAdmin = computed(() => {
+        return role.value === 'admin';
+    });
 
     // 批量更新 localStorage
     function updateLocalStorage(updates) {
@@ -89,10 +97,8 @@ export const useUserStore = defineStore('user', () => {
         if (userData.role !== undefined) {
             role.value = userData.role;
             updates.userRole = userData.role;
-        }
-        if (userData.isAdmin !== undefined) {
-            isAdmin.value = userData.isAdmin;
-            updates.isAdmin = userData.isAdmin;
+            // 更新角色时同步设置isAdmin状态到localStorage
+            updates.isAdmin = (userData.role === 'admin').toString();
         }
         if (userData.birthDate !== undefined) {
             birthDate.value = userData.birthDate;
@@ -123,7 +129,6 @@ export const useUserStore = defineStore('user', () => {
         email.value = '';
         bio.value = '';
         role.value = 'user';
-        isAdmin.value = false;
         birthDate.value = '';
         userId.value = '';
     }
@@ -137,6 +142,7 @@ export const useUserStore = defineStore('user', () => {
         isAdmin,
         birthDate,
         userId,
+        isLoggedIn,
         updateUser,
         clearUserData
     };
