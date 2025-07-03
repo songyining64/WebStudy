@@ -1,7 +1,6 @@
 package com.cupk.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.cupk.dto.UserRegisterDTO;
 import com.cupk.dto.UserLoginDTO;
 import com.cupk.entity.User;

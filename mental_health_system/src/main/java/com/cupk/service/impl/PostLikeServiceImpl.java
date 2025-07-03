@@ -3,9 +3,11 @@ package com.cupk.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cupk.entity.Post;
 import com.cupk.entity.PostLike;
 import com.cupk.mapper.PostLikeMapper;
+import com.cupk.mapper.PostMapper;
 import com.cupk.service.PostLikeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,14 +18,16 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 
 @Service
-public class PostLikeServiceImpl implements PostLikeService {
+public class PostLikeServiceImpl extends ServiceImpl<PostLikeMapper, PostLike> implements PostLikeService {
     private static final Logger logger = LoggerFactory.getLogger(PostLikeServiceImpl.class);
 
     private final PostLikeMapper postLikeMapper;
+    private final PostMapper postMapper;
 
     @Autowired
-    public PostLikeServiceImpl(PostLikeMapper postLikeMapper) {
+    public PostLikeServiceImpl(PostLikeMapper postLikeMapper, PostMapper postMapper) {
         this.postLikeMapper = postLikeMapper;
+        this.postMapper = postMapper;
     }
 
     @Override
@@ -50,10 +54,12 @@ public class PostLikeServiceImpl implements PostLikeService {
             postLike.setUserId(userId);
             postLike.setCreateTime(LocalDateTime.now());
 
-            int insertResult = postLikeMapper.insert(postLike);
-            logger.info("插入点赞记录结果: {}", insertResult);
-
-            return true;
+            boolean inserted = this.save(postLike);
+            if (inserted) {
+                // 2. 更新帖子表like_count
+                postMapper.increaseLikeCount(postId);
+            }
+            return inserted;
         } catch (Exception e) {
             logger.error("点赞帖子时发生异常，帖子ID: {}, 用户ID: {}", postId, userId, e);
             throw e; // 重新抛出异常以便事务回滚
@@ -78,14 +84,15 @@ public class PostLikeServiceImpl implements PostLikeService {
                 return false;
             }
 
+            // 1. 删除点赞关系
             LambdaQueryWrapper<PostLike> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(PostLike::getPostId, postId)
-                    .eq(PostLike::getUserId, userId);
-
-            int deleteResult = postLikeMapper.delete(wrapper);
-            logger.info("删除点赞记录结果: {}", deleteResult);
-
-            return deleteResult > 0;
+            wrapper.eq(PostLike::getPostId, postId).eq(PostLike::getUserId, userId);
+            boolean removed = this.remove(wrapper);
+            if (removed) {
+                // 2. 更新帖子表like_count
+                postMapper.decreaseLikeCount(postId);
+            }
+            return removed;
         } catch (Exception e) {
             logger.error("取消点赞帖子时发生异常，帖子ID: {}, 用户ID: {}", postId, userId, e);
             throw e; // 重新抛出异常以便事务回滚
@@ -129,7 +136,7 @@ public class PostLikeServiceImpl implements PostLikeService {
             return 0L;
         }
     }
-    
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean deleteByPostId(Long postId) {
@@ -153,19 +160,19 @@ public class PostLikeServiceImpl implements PostLikeService {
             throw e; // 重新抛出异常以便事务回滚
         }
     }
-    
+
     @Override
     public IPage<Post> getLikedPostsByUserId(Long userId, int page, int size) {
         logger.info("获取用户点赞的帖子列表，用户ID: {}, 页码: {}, 每页大小: {}", userId, page, size);
-        
+
         try {
             if (userId == null) {
                 throw new IllegalArgumentException("用户ID不能为空");
             }
-            
+
             // 创建分页参数
             Page<Post> pageParams = new Page<>(page, size);
-            
+
             // 调用Mapper查询用户点赞的帖子
             return postLikeMapper.selectLikedPostsByUserId(pageParams, userId);
         } catch (Exception e) {

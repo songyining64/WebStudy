@@ -191,9 +191,9 @@ public class PostController {
             @RequestParam Long userId,
             @RequestParam(value = "current", defaultValue = "1") int current,
             @RequestParam(value = "size", defaultValue = "10") int size) {
-        
+
         logger.info("获取用户帖子请求: userId={}, current={}, size={}", userId, current, size);
-        
+
         try {
             IPage<Post> postPage = postService.getPostsByUserId(userId, current, size);
             return Result.success(postPage);
@@ -209,9 +209,9 @@ public class PostController {
             @PathVariable Long userId,
             @RequestParam(value = "current", defaultValue = "1") int current,
             @RequestParam(value = "size", defaultValue = "10") int size) {
-        
+
         logger.info("获取用户收藏帖子请求: userId={}, current={}, size={}", userId, current, size);
-        
+
         try {
             IPage<Post> postPage = postService.getFavoritePostsByUserId(userId, current, size);
             return Result.success(postPage);
@@ -225,5 +225,22 @@ public class PostController {
     private boolean isAdmin(HttpServletRequest request) {
         String role = request.getHeader("X-User-Role");
         return "admin".equals(role);
+    }
+
+    /**
+     * 用户删除自己发的帖子
+     * 
+     * @param postId 帖子ID
+     * @param userId 用户ID
+     * @return 删除结果
+     */
+    @DeleteMapping("/user/{postId}")
+    public Result<?> deletePostByUser(@PathVariable Long postId, @RequestParam Long userId) {
+        boolean success = postService.deletePostByUser(postId, userId);
+        if (success) {
+            return Result.success("删除成功");
+        } else {
+            return Result.error("删除失败，您只能删除自己发的帖子");
+        }
     }
 }

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.cupk.entity.Post;
+import java.io.Serializable;
 
 public interface PostService extends IService<Post> {
     /**
@@ -106,7 +107,7 @@ public interface PostService extends IService<Post> {
      * @return 用户发布的帖子分页数据
      */
     IPage<Post> getPostsByUserId(Long userId, int page, int size);
-    
+
     /**
      * 获取用户收藏的帖子
      * 
@@ -116,4 +117,13 @@ public interface PostService extends IService<Post> {
      * @return 用户收藏的帖子分页数据
      */
     IPage<Post> getFavoritePostsByUserId(Long userId, int page, int size);
+
+    /**
+     * 用户删除自己发的帖子
+     * 
+     * @param postId 帖子ID
+     * @param userId 用户ID
+     * @return 是否删除成功
+     */
+    boolean deletePostByUser(Long postId, Long userId);
 }

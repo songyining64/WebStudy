@@ -96,6 +96,10 @@
           <div class="action-item" @click="toggleFavorite(post)" :class="{ 'active': post.favorited }">
             <i :class="['icon', post.favorited ? 'icon-favorited' : 'icon-favorite']">{{ post.favorited ? '⭐' : '☆' }}</i>
           </div>
+          <div v-if="isMyPost(post)" class="action-item delete-item" @click="deleteMyPost(post)">
+            <i class="icon icon-delete">🗑️</i>
+            <span>删除</span>
+          </div>
         </div>
       </div>
 
@@ -1167,6 +1171,28 @@ const handleImageError = (event, post, index) => {
     event.target.alt = '图片加载失败'
   }
 }
+
+// 判断是否为自己的帖子
+const isMyPost = (post) => {
+  return post.userId && userStore.userId && String(post.userId) === String(userStore.userId)
+}
+
+// 删除自己的帖子
+const deleteMyPost = async (post) => {
+  if (!confirm('确定要删除这条帖子吗？')) return
+  try {
+    const res = await request.delete(`/api/post/user/${post.id}`, { params: { userId: userStore.userId } })
+    if (res.code === 200) {
+      alert('删除成功')
+      // 刷新帖子列表
+      fetchPosts()
+    } else {
+      alert(res.msg || '删除失败')
+    }
+  } catch (e) {
+    alert('删除失败，请稍后重试')
+  }
+}
 </script>
 
 <style scoped>
@@ -1743,5 +1769,12 @@ textarea.form-control {
   cursor: pointer;
   color: #888;
   float: right;
+}
+
+.delete-item {
+  color: #ff4d4f;
+}
+.delete-item:hover {
+  color: #d9363e;
 }
 </style> 
