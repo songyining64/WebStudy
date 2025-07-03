@@ -21,7 +21,12 @@
                             class="image-item"
                             @click="showFullImage(image)"
                         >
-                            <img :src="image" :alt="`帖子图片${index + 1}`" class="post-image" @error="handleImageError($event, index)" />
+                            <img 
+                                :src="getImageUrl(image, index)" 
+                                :alt="`帖子图片${index + 1}`" 
+                                class="post-image" 
+                                @error="handleImageError($event, index)" 
+                            />
                         </div>
                     </div>
                 </div>
@@ -66,7 +71,10 @@
         <!-- 图片查看弹窗 -->
         <div v-if="showImageViewer" class="image-viewer-overlay" @click="closeImageViewer">
             <div class="image-viewer-content" @click.stop>
-                <img :src="currentViewingImage" alt="图片查看" />
+                <img 
+                    :src="currentViewingImage" 
+                    alt="图片查看" 
+                />
                 <button @click="closeImageViewer" class="close-btn">关闭</button>
             </div>
         </div>
@@ -302,30 +310,72 @@ const getImagesArray = (images) => {
     console.log('帖子详情页处理图片数据:', images, '类型:', typeof images)
     
     if (typeof images === 'string') {
-        // 过滤掉空字符串
-        const imagesArray = images.split(',').filter(img => img.trim() !== '')
-        console.log('帖子详情页解析后的图片数组:', imagesArray)
-        
-        // 处理每个URL，确保路径正确
-        return imagesArray.map((url, index) => {
-            console.log(`帖子详情页处理图片[${index}]的URL: ${url}`)
+        // 过滤掉空字符串和只有路径没有文件名的URL
+        const imagesArray = images.split(',').filter(img => {
+            // 过滤空字符串
+            if (img.trim() === '') return false
             
-            // 如果已经是完整URL，直接返回
-            if (url.startsWith('http')) {
-                return url
+            // 过滤只有路径没有文件名的情况（例如 "/static/upload/"）
+            if (img.trim() === '/static/upload/' || img.trim().endsWith('/')) {
+                console.warn(`帖子详情页过滤掉无效的图片URL(只有路径): ${img}`)
+                return false
             }
             
-            // 提取文件名
-            const parts = url.split('/')
-            const filename = parts[parts.length - 1]
-            console.log(`帖子详情页提取的文件名: ${filename}`)
-            
-            // 使用正确的路径格式 - 添加应用上下文路径
-            return `/mental/upload/${filename}`
+            return true
         })
+        
+        console.log('帖子详情页解析并过滤后的图片数组:', imagesArray)
+        
+        // 处理每个URL，确保路径正确，过滤掉不完整的URL
+        return imagesArray
+            .map((url, index) => {
+                console.log(`帖子详情页处理图片[${index}]的URL: ${url}`)
+                
+                // 如果已经是完整URL，直接返回
+                if (url.startsWith('http')) {
+                    return url
+                }
+                
+                // 提取文件名
+                const parts = url.split('/')
+                const filename = parts[parts.length - 1]
+                console.log(`帖子详情页提取的文件名: ${filename}`)
+                
+                // 检查文件名是否为空
+                if (!filename || filename === '') {
+                    console.warn(`帖子详情页图片URL没有有效的文件名: ${url}`)
+                    return null // 返回null以便后续过滤
+                }
+                
+                // 标准化URL格式为 /static/upload/filename
+                return `/static/upload/${filename}`
+            })
+            .filter(url => url !== null) // 过滤掉无效的URL
     } else if (Array.isArray(images)) {
         console.log('帖子详情页已是数组格式的图片:', images)
+        // 过滤掉不完整的URL并标准化格式
         return images
+            .filter(url => {
+                // 过滤非字符串
+                if (typeof url !== 'string') return false
+                
+                // 过滤只有路径没有文件名的情况
+                if (url.trim() === '/static/upload/' || url.trim().endsWith('/')) {
+                    console.warn(`帖子详情页过滤掉无效的图片URL(只有路径): ${url}`)
+                    return false
+                }
+                
+                // 检查是否有有效的文件名
+                const parts = url.split('/')
+                const filename = parts[parts.length - 1]
+                return filename && filename !== ''
+            })
+            .map(url => {
+                // 提取文件名，统一使用/static/upload/格式
+                const parts = url.split('/')
+                const filename = parts[parts.length - 1]
+                return `/static/upload/${filename}`
+            });
     }
     
     console.warn('帖子详情页无法处理的图片格式:', images)
@@ -346,26 +396,73 @@ const handleImageError = (event, index) => {
         const parts = url.split('/')
         const filename = parts[parts.length - 1]
         
-        // 尝试其他URL格式
-        const alternativeUrls = [
-            `/mental/upload/${filename}`,
-            `/upload/${filename}`,
-            `http://localhost:8080/mental/upload/${filename}`,
-            `http://localhost:8080/upload/${filename}`
-        ]
-        
-        // 找到当前URL在替代URL列表中的位置
-        const currentIndex = alternativeUrls.findIndex(alt => alt === url)
-        
-        // 如果有下一个替代URL，尝试使用它
-        if (currentIndex < alternativeUrls.length - 1) {
-            console.log(`尝试替代URL: ${alternativeUrls[currentIndex + 1]}`)
-            event.target.src = alternativeUrls[currentIndex + 1]
-        } else {
-            // 所有URL都尝试过了，显示默认图片
+        // 检查文件名是否为空
+        if (!filename || filename === '') {
+            console.error('帖子详情页图片URL没有有效的文件名，无法处理')
             event.target.src = '/src/assets/default-avatar.png'
             event.target.alt = '图片加载失败'
+            return
         }
+        
+        // 使用我们新创建的API直接获取图片
+        const directImageUrl = `http://localhost:8080/mental/api/static/direct-image/${filename}`
+        console.log(`使用直接图片API获取: ${directImageUrl}`)
+        event.target.src = directImageUrl
+        
+        // 如果直接API也失败，尝试其他URL格式
+        event.target.onerror = () => {
+            console.log(`直接图片API失败，尝试其他格式`)
+            
+            // 标准化当前URL为后端可识别的格式
+            let standardUrl = `/static/upload/${filename}`
+            
+            // 尝试其他URL格式 - 按优先级排序
+            const alternativeUrls = [
+                // 最有可能成功的格式
+                `http://localhost:8080/mental/static/upload/${filename}`,
+                `http://localhost:8080/static/upload/${filename}`,
+                `/mental/static/upload/${filename}`,
+                // 其他可能的格式
+                `http://localhost:8080/mental/upload/${filename}`,
+                `http://localhost:8080/upload/${filename}`,
+                `/mental/upload/${filename}`,
+                `/upload/${filename}`,
+                // 最后尝试直接访问文件名
+                `/${filename}`
+            ]
+            
+            console.log('图片加载失败URL:', url)
+            console.log('标准化URL为:', standardUrl)
+            console.log('将尝试以下替代URL:', alternativeUrls.join(', '))
+            
+            // 使用立即执行的递归函数尝试不同的URL
+            const tryNextUrl = (urlList, index = 0) => {
+                if (index >= urlList.length) {
+                    // 所有URL都尝试失败，使用默认图片
+                    console.log('所有URL尝试均失败，使用默认图片')
+                    event.target.src = '/src/assets/default-avatar.png'
+                    event.target.alt = '图片加载失败'
+                    event.target.onerror = null // 清除事件处理器
+                    return;
+                }
+                
+                console.log(`尝试URL[${index}]: ${urlList[index]}`)
+                event.target.src = urlList[index]
+                
+                // 设置错误处理函数以尝试下一个URL
+                event.target.onerror = () => {
+                    console.log(`URL[${index}]加载失败，尝试下一个`)
+                    tryNextUrl(urlList, index + 1)
+                }
+            }
+            
+            // 开始尝试所有可能的URL
+            tryNextUrl(alternativeUrls)
+        }
+    } else {
+        console.error('没有有效的图片URL')
+        event.target.src = '/src/assets/default-avatar.png'
+        event.target.alt = '图片加载失败'
     }
 }
 
@@ -378,9 +475,28 @@ const getImagesGridClass = (images) => {
     return `grid-${Math.min(count, 4)}`
 }
 
+// 根据图片URL获取适当的显示URL
+const getImageUrl = (imageUrl, index) => {
+    if (!imageUrl) return '/src/assets/default-avatar.png';
+    
+    // 提取文件名
+    const parts = imageUrl.split('/')
+    const filename = parts[parts.length - 1]
+    
+    // 如果没有有效的文件名，返回默认图片
+    if (!filename || filename.trim() === '') {
+        console.warn(`帖子详情页图片URL没有有效的文件名: ${imageUrl}`)
+        return '/src/assets/default-avatar.png';
+    }
+    
+    // 使用直接图片API
+    return `http://localhost:8080/mental/api/static/direct-image/${filename}`
+}
+
 // 显示图片查看弹窗
 const showFullImage = (imageUrl) => {
-    currentViewingImage.value = imageUrl
+    const directUrl = getImageUrl(imageUrl)
+    currentViewingImage.value = directUrl
     showImageViewer.value = true
 }
 

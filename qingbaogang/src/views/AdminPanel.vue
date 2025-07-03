@@ -486,9 +486,9 @@ const deletePost = (post) => {
         
         // 判断响应是否表示成功（兼容不同格式的响应）
         if (res.success === true || res.code === 200 || res.code === 0) {
-          ElMessage.success('帖子已删除');
-          fetchPosts(); // 刷新帖子列表
-          fetchStats(); // 刷新统计数据
+        ElMessage.success('帖子已删除');
+        fetchPosts(); // 刷新帖子列表
+        fetchStats(); // 刷新统计数据
         } else {
           // 尽管显示错误，但仍然刷新列表，以防后端删除成功但响应格式不符合预期
           ElMessage({

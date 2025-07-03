@@ -27,6 +27,10 @@ export default defineConfig({
             '/mental/upload': {
                 target: 'http://localhost:8080', // 代理带应用上下文的静态资源请求
                 changeOrigin: true
+            },
+            '/mental/static/upload': {
+                target: 'http://localhost:8080', // 代理带应用上下文的静态资源请求
+                changeOrigin: true
             }
         },
         cors: true
