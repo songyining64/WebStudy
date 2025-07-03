@@ -102,4 +102,28 @@ public class CommentLikeServiceImpl implements CommentLikeService {
         logger.debug("评论点赞数: {}, commentId={}", count, commentId);
         return count;
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean deleteByCommentId(Long commentId) {
+        logger.info("删除评论相关的所有点赞记录，评论ID: {}", commentId);
+
+        try {
+            if (commentId == null) {
+                logger.error("删除评论点赞记录失败：评论ID为空");
+                return false;
+            }
+
+            LambdaQueryWrapper<CommentLike> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(CommentLike::getCommentId, commentId);
+
+            int deleteCount = commentLikeMapper.delete(wrapper);
+            logger.info("已删除评论ID={}的点赞记录，数量: {}", commentId, deleteCount);
+
+            return true;
+        } catch (Exception e) {
+            logger.error("删除评论点赞记录时发生异常，评论ID: {}", commentId, e);
+            throw e; // 重新抛出异常以便事务回滚
+        }
+    }
 }

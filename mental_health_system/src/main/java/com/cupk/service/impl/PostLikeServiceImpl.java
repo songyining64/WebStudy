@@ -161,4 +161,28 @@ public class PostLikeServiceImpl implements PostLikeService {
             return 0L;
         }
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean deleteByPostId(Long postId) {
+        logger.info("删除帖子相关的所有点赞记录，帖子ID: {}", postId);
+
+        try {
+            if (postId == null) {
+                logger.error("删除点赞记录失败：帖子ID为空");
+                return false;
+            }
+
+            LambdaQueryWrapper<PostLike> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(PostLike::getPostId, postId);
+
+            int deleteCount = postLikeMapper.delete(wrapper);
+            logger.info("已删除帖子ID={}的点赞记录，数量: {}", postId, deleteCount);
+
+            return true;
+        } catch (Exception e) {
+            logger.error("删除帖子点赞记录时发生异常，帖子ID: {}", postId, e);
+            throw e; // 重新抛出异常以便事务回滚
+        }
+    }
 }

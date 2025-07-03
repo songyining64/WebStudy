@@ -1,7 +1,7 @@
 <template>
   <div class="profile-container">
     <div class="profile-header">
-      <img :src="avatarUrl" class="profile-avatar" />
+      <img :src="avatarUrl" class="profile-avatar" alt="用户头像" />
       <div class="profile-info">
         <h2>{{ userStore.name }}</h2>
         <p class="profile-bio">{{ userStore.bio || '这个用户很懒，还没有写简介' }}</p>
@@ -48,7 +48,7 @@
     <div v-if="showDetailDialog" class="dialog-bg">
       <div class="dialog-box detail-box">
         <h3>{{ detailPost.title }}</h3>
-        <img v-if="detailPost.image" :src="detailPost.image" class="detail-img" />
+        <img v-if="detailPost.image" :src="detailPost.image" class="detail-img" alt="帖子图片" />
         <div class="detail-content">{{ detailPost.content }}</div>
         <div class="detail-meta">
           <span>作者：{{ detailPost.author }}</span>

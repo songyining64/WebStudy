@@ -1,16 +1,21 @@
 package com.cupk.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cupk.entity.Post;
+import com.cupk.entity.Comment;
 import com.cupk.mapper.PostMapper;
+import com.cupk.mapper.CommentMapper;
 import com.cupk.service.PostService;
 import com.cupk.service.PostLikeService;
+import com.cupk.service.CommentLikeService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.io.Serializable;
 
 @Service
 public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements PostService {
@@ -18,10 +23,15 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
 
     private final PostMapper postMapper;
     private final PostLikeService postLikeService;
+    private final CommentMapper commentMapper;
+    private final CommentLikeService commentLikeService;
 
-    public PostServiceImpl(PostMapper postMapper, PostLikeService postLikeService) {
+    public PostServiceImpl(PostMapper postMapper, PostLikeService postLikeService,
+            CommentMapper commentMapper, CommentLikeService commentLikeService) {
         this.postMapper = postMapper;
         this.postLikeService = postLikeService;
+        this.commentMapper = commentMapper;
+        this.commentLikeService = commentLikeService;
     }
 
     @Override
@@ -161,6 +171,57 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
                 return true;
             default:
                 return false;
+        }
+    }
+
+    /**
+     * 重写removeById方法实现级联删除
+     * 删除帖子时同时删除相关的评论、点赞等数据
+     *
+     * @param id 帖子ID
+     * @return 是否删除成功
+     */
+    @Override
+    @Transactional
+    public boolean removeById(Serializable id) {
+        if (id == null) {
+            return false;
+        }
+
+        Long postId = (Long) id;
+        logger.info("开始删除帖子: ID = {}", postId);
+
+        try {
+            // 1. 查询该帖子下的所有评论
+            QueryWrapper<Comment> commentQueryWrapper = new QueryWrapper<>();
+            commentQueryWrapper.eq("post_id", postId);
+
+            // 2. 删除评论的点赞记录
+            commentMapper.selectList(commentQueryWrapper).forEach(comment -> {
+                try {
+                    // 删除评论点赞
+                    commentLikeService.deleteByCommentId(comment.getId());
+                    logger.info("已删除评论ID={}的点赞记录", comment.getId());
+                } catch (Exception e) {
+                    logger.error("删除评论点赞记录失败，评论ID={}", comment.getId(), e);
+                }
+            });
+
+            // 3. 删除该帖子的所有评论
+            commentMapper.delete(commentQueryWrapper);
+            logger.info("已删除帖子ID={}的所有评论", postId);
+
+            // 4. 删除帖子的点赞记录
+            postLikeService.deleteByPostId(postId);
+            logger.info("已删除帖子ID={}的所有点赞记录", postId);
+
+            // 5. 最后删除帖子
+            boolean result = super.removeById(id);
+            logger.info("删除帖子完成: ID = {}, 结果 = {}", postId, result);
+            return result;
+        } catch (Exception e) {
+            logger.error("删除帖子过程中发生异常: ID = {}", postId, e);
+            throw e; // 重新抛出异常，让事务回滚
         }
     }
 }
