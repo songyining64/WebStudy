@@ -119,43 +119,22 @@
           <input v-model="newPost.title" placeholder="标题" class="form-control" />
           <select v-model="newPost.category" class="form-control" required title="帖子分类">
             <option value="" disabled>请选择分类</option>
-            <option v-for="item in categories" :key="item.value" :value="item.value">{{ item.label }}</option>
+            <option value="心理健康">心理健康</option>
+            <option value="学习方法">学习方法</option>
+            <option value="情感">情感</option>
+            <option value="压力管理">压力管理</option>
+            <option value="社交">社交</option>
+            <option value="职业发展">职业发展</option>
+            <option value="健康">健康</option>
+            <option value="生活">生活</option>
+            <option value="其他">其他</option>
           </select>
           <textarea v-model="newPost.content" placeholder="分享你的故事..." class="form-control" rows="6"></textarea>
-          
-          <!-- 图片上传区域 -->
-          <div class="image-upload-container">
-            <div class="upload-header">
-              <h4>添加图片</h4>
-              <span class="image-count">{{ uploadedImages.length }}/{{ maxImageCount }}</span>
-            </div>
-            <div class="image-preview-container">
-              <!-- 已上传的图片预览 -->
-              <div v-for="(image, index) in uploadedImages" :key="index" class="image-preview">
-                <img :src="image.url" alt="预览图片" />
-                <div class="image-actions">
-                  <button type="button" class="delete-btn" @click="removeImage(index)">×</button>
-                </div>
-              </div>
-              <!-- 上传按钮 -->
-              <div v-if="uploadedImages.length < maxImageCount" class="upload-btn-wrapper">
-                <div class="upload-btn" @click="triggerFileInput">
-                  <i class="upload-icon">+</i>
-                  <span>上传图片</span>
-                </div>
-                <input 
-                  ref="fileInput" 
-                  type="file" 
-                  accept="image/*" 
-                  multiple 
-                  @change="handleFileUpload" 
-                  style="display: none;"
-                />
-              </div>
-            </div>
-            <div class="upload-tips">支持JPG、PNG格式，最多上传{{ maxImageCount }}张</div>
+          <!-- 图片上传 -->
+          <input type="file" accept="image/*" multiple @change="handleFileUpload" />
+          <div class="image-preview-list">
+            <img v-for="img in uploadedImages" :key="img" :src="img" style="max-width: 100px; margin: 8px;" />
           </div>
-          
           <input v-model="newPost.tags" placeholder="添加标签，用逗号分隔" class="form-control" />
           <div class="form-footer">
             <button @click="showPostForm = false" class="cancel-btn">取消</button>
@@ -257,7 +236,6 @@ const advancedSearch = reactive({
   sortOrder: 'DESC'
 })
 // 图片上传相关
-const fileInput = ref(null)
 const uploadedImages = ref([])
 const maxImageCount = 6 // 最大上传图片数量
 const isSubmitting = ref(false) // 提交状态
@@ -870,58 +848,19 @@ onMounted(() => {
   fetchPosts()
 })
 
-// 触发文件上传
-const triggerFileInput = () => {
-  fileInput.value.click()
-}
-
-// 处理文件上传
-const handleFileUpload = (event) => {
+// 处理图片上传
+const handleFileUpload = async (event) => {
   const files = event.target.files
-  if (!files || files.length === 0) return
-  
-  // 计算可以上传的图片数量
-  const remainingSlots = maxImageCount - uploadedImages.value.length
-  const filesToProcess = Array.from(files).slice(0, remainingSlots)
-  
-  // 处理每个文件
-  filesToProcess.forEach(file => {
-    // 验证文件类型
-    if (!file.type.startsWith('image/')) {
-      alert('只支持上传图片文件')
-      return
-    }
-    
-    // 验证文件大小（限制为5MB）
-    if (file.size > 5 * 1024 * 1024) {
-      alert('图片大小不能超过5MB')
-      return
-    }
-    
-    // 创建临时URL用于预览
-    const imageUrl = URL.createObjectURL(file)
-    
-    // 添加到已上传图片列表
-    uploadedImages.value.push({
-      file: file,
-      url: imageUrl,
-      uploaded: false
+  for (let file of files) {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await request.post('/api/upload/image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
     })
-  })
-  
-  // 重置文件输入，以便相同文件可以再次触发change事件
-  event.target.value = null
-}
-
-// 移除已上传的图片
-const removeImage = (index) => {
-  // 如果有临时URL，释放它
-  if (uploadedImages.value[index].url && uploadedImages.value[index].url.startsWith('blob:')) {
-    URL.revokeObjectURL(uploadedImages.value[index].url)
+    if (res.data && res.data.url) {
+      uploadedImages.value.push(res.data.url)
+    }
   }
-  
-  // 从列表中移除
-  uploadedImages.value.splice(index, 1)
 }
 
 // 上传图片到服务器
