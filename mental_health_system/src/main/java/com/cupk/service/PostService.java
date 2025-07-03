@@ -96,4 +96,24 @@ public interface PostService extends IService<Post> {
             String category,
             String sortBy,
             String sortOrder);
+
+    /**
+     * 获取用户发布的帖子
+     * 
+     * @param userId 用户ID
+     * @param page   页码
+     * @param size   每页数量
+     * @return 用户发布的帖子分页数据
+     */
+    IPage<Post> getPostsByUserId(Long userId, int page, int size);
+    
+    /**
+     * 获取用户收藏的帖子
+     * 
+     * @param userId 用户ID
+     * @param page   页码
+     * @param size   每页数量
+     * @return 用户收藏的帖子分页数据
+     */
+    IPage<Post> getFavoritePostsByUserId(Long userId, int page, int size);
 }

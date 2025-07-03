@@ -25,12 +25,12 @@
       </div>
       <div class="sort-options">
         <span>排序:</span>
-        <select v-model="sortBy" @change="fetchPosts">
+        <select v-model="sortBy" @change="fetchPosts" title="排序字段">
           <option value="create_time">最新发布</option>
           <option value="like_count">点赞数</option>
           <option value="comment_count">评论数</option>
         </select>
-        <select v-model="sortOrder" @change="fetchPosts">
+        <select v-model="sortOrder" @change="fetchPosts" title="排序方式">
           <option value="DESC">降序</option>
           <option value="ASC">升序</option>
         </select>
@@ -49,6 +49,23 @@
         </div>
         <div class="post-content" @click="goToPostDetail(post.id)">
           {{ post.content && post.content.length > 120 ? post.content.substring(0, 120) + '...' : post.content }}
+        </div>
+        <!-- 帖子图片展示 -->
+        <div v-if="post.images" class="post-images">
+          <div class="images-grid" :class="'grid-' + Math.min(getImagesArray(post.images).length, 4)">
+            <div 
+              v-for="(image, index) in getImagesArray(post.images).slice(0, 4)" 
+              :key="index" 
+              class="image-item"
+              @click.stop="showFullImage(image)"
+            >
+              <img :src="image" :alt="`${post.title}图片${index + 1}`" class="post-image" @error="handleImageError($event, post, index)" />
+              <!-- 如果有更多图片，显示+N -->
+              <div v-if="index === 3 && getImagesArray(post.images).length > 4" class="more-images-overlay">
+                <span>+{{ getImagesArray(post.images).length - 4 }}</span>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="post-tags">
           <template v-if="post.tags && typeof post.tags === 'string'">
@@ -100,15 +117,55 @@
         </div>
         <div class="post-form">
           <input v-model="newPost.title" placeholder="标题" class="form-control" />
-          <select v-model="newPost.category" class="form-control" required>
+          <select v-model="newPost.category" class="form-control" required title="帖子分类">
             <option value="" disabled>请选择分类</option>
             <option v-for="item in categories" :key="item.value" :value="item.value">{{ item.label }}</option>
           </select>
           <textarea v-model="newPost.content" placeholder="分享你的故事..." class="form-control" rows="6"></textarea>
+          
+          <!-- 图片上传区域 -->
+          <div class="image-upload-container">
+            <div class="upload-header">
+              <h4>添加图片</h4>
+              <span class="image-count">{{ uploadedImages.length }}/{{ maxImageCount }}</span>
+            </div>
+            <div class="image-preview-container">
+              <!-- 已上传的图片预览 -->
+              <div v-for="(image, index) in uploadedImages" :key="index" class="image-preview">
+                <img :src="image.url" alt="预览图片" />
+                <div class="image-actions">
+                  <button type="button" class="delete-btn" @click="removeImage(index)">×</button>
+                </div>
+              </div>
+              <!-- 上传按钮 -->
+              <div v-if="uploadedImages.length < maxImageCount" class="upload-btn-wrapper">
+                <div class="upload-btn" @click="triggerFileInput">
+                  <i class="upload-icon">+</i>
+                  <span>上传图片</span>
+                </div>
+                <input 
+                  ref="fileInput" 
+                  type="file" 
+                  accept="image/*" 
+                  multiple 
+                  @change="handleFileUpload" 
+                  style="display: none;"
+                />
+              </div>
+            </div>
+            <div class="upload-tips">支持JPG、PNG格式，最多上传{{ maxImageCount }}张</div>
+          </div>
+          
           <input v-model="newPost.tags" placeholder="添加标签，用逗号分隔" class="form-control" />
           <div class="form-footer">
             <button @click="showPostForm = false" class="cancel-btn">取消</button>
-            <button @click="createNewPost" class="submit-btn" :disabled="!newPost.title || !newPost.content || !newPost.category">发布</button>
+            <button 
+              @click="createNewPost" 
+              class="submit-btn" 
+              :disabled="!newPost.title || !newPost.content || !newPost.category || isSubmitting"
+            >
+              {{ isSubmitting ? '发布中...' : '发布' }}
+            </button>
           </div>
         </div>
       </div>
@@ -123,7 +180,7 @@
         </div>
         <div class="form-group">
           <label>分类</label>
-          <select v-model="advancedSearch.category">
+          <select v-model="advancedSearch.category" title="筛选分类">
             <option value="">全部分类</option>
             <option v-for="category in categories.slice(1)" :key="category.value" :value="category.value">
               {{ category.label }}
@@ -132,17 +189,25 @@
         </div>
         <div class="form-group">
           <label>排序方式</label>
-          <select v-model="advancedSearch.sortBy">
+          <select v-model="advancedSearch.sortBy" title="高级搜索排序字段">
             <option value="create_time">发布时间</option>
             <option value="like_count">点赞数</option>
             <option value="comment_count">评论数</option>
           </select>
-          <select v-model="advancedSearch.sortOrder">
+          <select v-model="advancedSearch.sortOrder" title="高级搜索排序方式">
             <option value="DESC">降序</option>
             <option value="ASC">升序</option>
           </select>
         </div>
         <button class="search-btn" @click="applyAdvancedSearch">搜索</button>
+      </div>
+    </div>
+
+    <!-- 图片查看弹窗 -->
+    <div v-if="showImageViewer" class="image-viewer-overlay">
+      <div class="image-viewer-content">
+        <img :src="currentViewingImage" alt="图片查看" />
+        <button @click="showImageViewer = false" class="close-btn">关闭</button>
       </div>
     </div>
   </div>
@@ -152,6 +217,7 @@
 import { ref, onMounted, computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { request } from '@/utils/request'
 import { 
   getPostList, 
   createPost, 
@@ -190,6 +256,14 @@ const advancedSearch = reactive({
   sortBy: 'create_time',
   sortOrder: 'DESC'
 })
+// 图片上传相关
+const fileInput = ref(null)
+const uploadedImages = ref([])
+const maxImageCount = 6 // 最大上传图片数量
+const isSubmitting = ref(false) // 提交状态
+// 图片查看
+const currentViewingImage = ref('')
+const showImageViewer = ref(false)
 const mockPosts = ref([
   {
     id: 'mock1',
@@ -479,17 +553,26 @@ const createNewPost = async () => {
     alert('标题、内容和分类不能为空')
     return
   }
+  
+  // 设置提交状态
+  isSubmitting.value = true
+  
   try {
+    // 首先上传图片
+    const imageUrls = await uploadImagesToServer()
+    
+    // 构造帖子数据
     const postData = {
       title: newPost.title,
       content: newPost.content,
       tags: newPost.tags,
       userId: userStore.userId || '1',
       username: userStore.username || '用户' + (userStore.userId || '1'),
-      category: newPost.category
+      category: newPost.category,
+      images: imageUrls.filter(url => url).join(',') // 将图片URL数组转换为逗号分隔的字符串
     }
     
-    console.log('创建帖子，带用户名:', postData)
+    console.log('创建帖子，带用户名和图片:', postData)
     
     // 发送创建帖子请求
     const response = await createPost(postData)
@@ -501,6 +584,15 @@ const createNewPost = async () => {
     newPost.content = ''
     newPost.tags = ''
     newPost.category = ''
+    
+    // 清空已上传图片
+    uploadedImages.value.forEach(image => {
+      if (image.url && image.url.startsWith('blob:')) {
+        URL.revokeObjectURL(image.url)
+      }
+    })
+    uploadedImages.value = []
+    
     showPostForm.value = false
     
     // 显示成功消息
@@ -515,6 +607,9 @@ const createNewPost = async () => {
   } catch (error) {
     console.error('发帖失败:', error)
     alert('发帖失败，请稍后重试')
+  } finally {
+    // 重置提交状态
+    isSubmitting.value = false
   }
 }
 
@@ -774,6 +869,178 @@ onMounted(() => {
   // 初始化获取帖子列表
   fetchPosts()
 })
+
+// 触发文件上传
+const triggerFileInput = () => {
+  fileInput.value.click()
+}
+
+// 处理文件上传
+const handleFileUpload = (event) => {
+  const files = event.target.files
+  if (!files || files.length === 0) return
+  
+  // 计算可以上传的图片数量
+  const remainingSlots = maxImageCount - uploadedImages.value.length
+  const filesToProcess = Array.from(files).slice(0, remainingSlots)
+  
+  // 处理每个文件
+  filesToProcess.forEach(file => {
+    // 验证文件类型
+    if (!file.type.startsWith('image/')) {
+      alert('只支持上传图片文件')
+      return
+    }
+    
+    // 验证文件大小（限制为5MB）
+    if (file.size > 5 * 1024 * 1024) {
+      alert('图片大小不能超过5MB')
+      return
+    }
+    
+    // 创建临时URL用于预览
+    const imageUrl = URL.createObjectURL(file)
+    
+    // 添加到已上传图片列表
+    uploadedImages.value.push({
+      file: file,
+      url: imageUrl,
+      uploaded: false
+    })
+  })
+  
+  // 重置文件输入，以便相同文件可以再次触发change事件
+  event.target.value = null
+}
+
+// 移除已上传的图片
+const removeImage = (index) => {
+  // 如果有临时URL，释放它
+  if (uploadedImages.value[index].url && uploadedImages.value[index].url.startsWith('blob:')) {
+    URL.revokeObjectURL(uploadedImages.value[index].url)
+  }
+  
+  // 从列表中移除
+  uploadedImages.value.splice(index, 1)
+}
+
+// 上传图片到服务器
+const uploadImagesToServer = async () => {
+  // 收集所有未上传的图片文件
+  const imagesToUpload = uploadedImages.value.filter(img => !img.uploaded)
+  if (imagesToUpload.length === 0) return []
+  
+  console.log('准备上传图片，数量:', imagesToUpload.length)
+  
+  // 上传所有图片
+  const uploadPromises = imagesToUpload.map(async (image) => {
+    try {
+      const formData = new FormData()
+      formData.append('file', image.file)
+      
+      console.log('上传图片:', image.file.name, '类型:', image.file.type, '大小:', image.file.size)
+      
+      // 调用上传API
+      const response = await request.upload('/api/upload/image', image.file)
+      
+      console.log('图片上传响应:', response)
+      
+      // 标记为已上传
+      image.uploaded = true
+      
+      // 返回服务器返回的图片URL
+      const imageUrl = response.data?.url || ''
+      console.log('获取到的图片URL:', imageUrl)
+      return imageUrl
+    } catch (error) {
+      console.error('图片上传失败:', error)
+      return ''
+    }
+  })
+  
+  // 等待所有图片上传完成
+  const urls = await Promise.all(uploadPromises)
+  console.log('所有图片上传完成，URLs:', urls)
+  return urls
+}
+
+// 显示图片查看弹窗
+const showFullImage = (imageUrl) => {
+  currentViewingImage.value = imageUrl
+  showImageViewer.value = true
+}
+
+// 辅助函数：将字符串转换为数组并确保URL完整
+const getImagesArray = (images) => {
+  if (!images) return []
+  
+  console.log('处理图片数据:', images, '类型:', typeof images)
+  
+  if (typeof images === 'string') {
+    // 过滤掉空字符串
+    const imagesArray = images.split(',').filter(img => img.trim() !== '')
+    console.log('解析后的图片数组:', imagesArray)
+    
+    // 处理每个URL，确保路径正确
+    return imagesArray.map((url, index) => {
+      console.log(`处理图片[${index}]的URL: ${url}`)
+      
+      // 如果已经是完整URL，直接返回
+      if (url.startsWith('http')) {
+        return url
+      }
+      
+      // 提取文件名
+      const parts = url.split('/')
+      const filename = parts[parts.length - 1]
+      console.log(`提取的文件名: ${filename}`)
+      
+      // 使用正确的路径格式 - 添加应用上下文路径
+      return `/mental/upload/${filename}`
+    })
+  } else if (Array.isArray(images)) {
+    console.log('已是数组格式的图片:', images)
+    return images
+  }
+  
+  console.warn('无法处理的图片格式:', images)
+  return []
+}
+
+// 图片错误处理
+const handleImageError = (event, post, index) => {
+  console.error(`图片加载失败: 帖子ID=${post.id}, 图片索引=${index}`)
+  
+  // 尝试其他URL格式
+  const imagesArray = getImagesArray(post.images)
+  const url = imagesArray[index]
+  
+  if (url) {
+    const parts = url.split('/')
+    const filename = parts[parts.length - 1]
+    
+    // 尝试其他URL格式
+    const alternativeUrls = [
+      `/mental/upload/${filename}`,
+      `/upload/${filename}`,
+      `http://localhost:8080/mental/upload/${filename}`,
+      `http://localhost:8080/upload/${filename}`
+    ]
+    
+    // 找到当前URL在替代URL列表中的位置
+    const currentIndex = alternativeUrls.findIndex(alt => alt === url)
+    
+    // 如果有下一个替代URL，尝试使用它
+    if (currentIndex < alternativeUrls.length - 1) {
+      console.log(`尝试替代URL: ${alternativeUrls[currentIndex + 1]}`)
+      event.target.src = alternativeUrls[currentIndex + 1]
+    } else {
+      // 所有URL都尝试过了，显示默认图片
+      event.target.src = '/src/assets/default-avatar.png'
+      event.target.alt = '图片加载失败'
+    }
+  }
+}
 </script>
 
 <style scoped>
@@ -895,6 +1162,60 @@ onMounted(() => {
   margin-bottom: 12px;
   line-height: 1.5;
   cursor: pointer;
+}
+
+.post-images {
+  margin-bottom: 12px;
+}
+
+.images-grid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.images-grid.grid-1 .image-item {
+  width: 200px;
+  height: 200px;
+}
+
+.images-grid.grid-2 .image-item {
+  width: calc(50% - 5px);
+  height: 150px;
+}
+
+.images-grid.grid-3 .image-item, 
+.images-grid.grid-4 .image-item {
+  width: calc(50% - 5px);
+  height: 120px;
+}
+
+.image-item {
+  position: relative;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.image-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.more-images-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 13px;
 }
 
 .post-tags {
@@ -1122,5 +1443,131 @@ textarea.form-control {
   border: none;
   border-radius: 4px;
   cursor: pointer;
+}
+
+/* 图片上传区域样式 */
+.image-upload-container {
+  margin-bottom: 16px;
+}
+
+.upload-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.upload-header h4 {
+  margin: 0;
+  color: #333;
+}
+
+.image-count {
+  color: #888;
+  font-size: 13px;
+}
+
+.image-preview-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.image-preview {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  gap: 5px;
+  padding: 5px;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #888;
+}
+
+.upload-btn-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.upload-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.upload-icon {
+  color: #888;
+  font-size: 16px;
+}
+
+.upload-tips {
+  color: #888;
+  font-size: 13px;
+}
+
+/* 图片查看弹窗样式 */
+.image-viewer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1002;
+}
+
+.image-viewer-content {
+  background-color: #fff;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow: auto;
+  padding: 16px;
+}
+
+.image-viewer-content img {
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #888;
+  float: right;
 }
 </style> 

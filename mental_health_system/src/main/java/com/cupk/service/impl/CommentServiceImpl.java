@@ -272,4 +272,53 @@ public class CommentServiceImpl implements CommentService {
         logger.info("获取评论总数");
         return commentMapper.selectCount(null);
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean deleteByPostId(Long postId) {
+        logger.info("删除帖子的所有评论: postId={}", postId);
+
+        try {
+            if (postId == null) {
+                logger.error("帖子ID为空，无法删除评论");
+                return false;
+            }
+
+            // 首先查找该帖子下的所有评论
+            LambdaQueryWrapper<Comment> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(Comment::getPostId, postId);
+            List<Comment> comments = commentMapper.selectList(queryWrapper);
+
+            if (comments.isEmpty()) {
+                logger.info("帖子没有评论，无需删除: postId={}", postId);
+                return true;
+            }
+
+            logger.info("找到{}条评论需要删除", comments.size());
+
+            // 收集所有评论ID，用于删除点赞记录
+            List<Long> commentIds = comments.stream()
+                    .map(Comment::getId)
+                    .collect(Collectors.toList());
+
+            // 删除这些评论的点赞记录
+            for (Long commentId : commentIds) {
+                try {
+                    commentLikeService.deleteByCommentId(commentId);
+                    logger.info("已删除评论点赞记录: commentId={}", commentId);
+                } catch (Exception e) {
+                    logger.error("删除评论点赞记录失败: commentId={}", commentId, e);
+                }
+            }
+
+            // 删除所有评论
+            int deleteCount = commentMapper.delete(queryWrapper);
+            logger.info("成功删除{}条评论", deleteCount);
+
+            return true;
+        } catch (Exception e) {
+            logger.error("删除帖子评论时发生异常: postId={}", postId, e);
+            throw e; // 重新抛出异常以便事务回滚
+        }
+    }
 }
