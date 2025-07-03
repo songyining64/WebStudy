@@ -454,187 +454,189 @@ onMounted(() => {
 
 <style scoped>
 .profile-container {
-  padding: 32px;
+  max-width: 700px;
+  margin: 40px auto;
+  padding: 32px 0;
   background: #f8fafc;
   min-height: 92vh;
 }
-
 .profile-header {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 32px 32px 24px 32px;
   display: flex;
   align-items: center;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 12px rgba(52,152,219,0.08);
+  margin-bottom: 32px;
+  box-shadow: 0 4px 24px rgba(52,152,219,0.10);
+  border: 1.5px solid #e0e6ed;
 }
-
 .profile-avatar {
-  width: 80px;
-  height: 80px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
-  margin-right: 24px;
+  margin-right: 32px;
   object-fit: cover;
+  border: 2.5px solid #3498db;
+  box-shadow: 0 2px 8px rgba(52,152,219,0.08);
 }
-
 .profile-info h2 {
   margin: 0 0 8px 0;
-  color: #2c3e50;
+  color: #217dbb;
+  font-size: 1.6rem;
+  font-weight: bold;
+  border-left: 6px solid #3498db;
+  padding-left: 12px;
+  background: linear-gradient(90deg, #eaf2fb 60%, transparent);
+  border-radius: 6px;
 }
-
 .profile-bio {
   margin: 0;
   color: #7f8c8d;
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
-
 .profile-content {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 2px 12px rgba(52,152,219,0.08);
+  background: #fff;
+  border-radius: 20px;
+  padding: 28px 24px 18px 24px;
+  box-shadow: 0 4px 24px rgba(52,152,219,0.10);
+  border: 1.5px solid #e0e6ed;
 }
-
 .tab-header {
   display: flex;
-  border-bottom: 2px solid #eee;
+  border-bottom: none;
   margin-bottom: 24px;
+  gap: 12px;
+  justify-content: center;
 }
-
 .tab-item {
-  padding: 12px 24px;
+  display: inline-block;
+  padding: 7px 22px;
+  background: #f4f8fb;
+  border-radius: 999px;
   cursor: pointer;
-  color: #7f8c8d;
-  font-weight: 500;
+  font-size: 15px;
+  color: #217dbb;
+  border: 1.5px solid #e0e6ed;
+  box-shadow: 0 2px 8px rgba(52,152,219,0.06);
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.15s;
   position: relative;
-  transition: color 0.3s;
+  font-weight: 500;
 }
-
 .tab-item.active {
+  background: linear-gradient(90deg, #3498db 60%, #6dd5fa 100%);
+  color: #fff;
+  border: 1.5px solid #3498db;
+  box-shadow: 0 4px 16px rgba(52,152,219,0.10);
+  font-weight: bold;
+  transform: scale(1.06);
+  z-index: 1;
+}
+.tab-item:hover:not(.active) {
+  background: #eaf2fb;
   color: #3498db;
+  box-shadow: 0 2px 12px rgba(52,152,219,0.10);
+  transform: scale(1.04);
 }
-
-.tab-item.active::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background-color: #3498db;
-}
-
 .tab-item .count {
   font-size: 0.85rem;
   opacity: 0.7;
 }
-
 .post-list {
   min-height: 300px;
 }
-
 .post-card {
   display: flex;
   padding: 16px;
-  border-bottom: 1px solid #eee;
+  border-radius: 14px;
+  background: #f8fafc;
+  box-shadow: 0 2px 8px rgba(52,152,219,0.06);
+  border: 1.5px solid #e0e6ed;
+  margin-bottom: 18px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, box-shadow 0.2s, border 0.2s;
 }
-
 .post-card:hover {
-  background-color: #f8fafc;
+  background-color: #eaf2fb;
+  box-shadow: 0 4px 16px rgba(52,152,219,0.10);
+  border: 1.5px solid #3498db;
 }
-
 .post-img {
   width: 80px;
   height: 80px;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 10px;
   margin-right: 16px;
+  border: 1.5px solid #e0e6ed;
 }
-
 .post-info {
   flex: 1;
 }
-
 .post-title {
   font-weight: 600;
   margin-bottom: 8px;
   color: #2c3e50;
+  font-size: 1.08rem;
 }
-
 .post-content {
   color: #7f8c8d;
   margin-bottom: 8px;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
-
 .post-meta {
   display: flex;
   align-items: center;
   margin-bottom: 8px;
   font-size: 0.85rem;
 }
-
 .post-author {
   color: #3498db;
   margin-right: 12px;
 }
-
 .post-tag {
-  background-color: #f1f5f9;
-  color: #64748b;
-  padding: 2px 8px;
-  border-radius: 12px;
+  background-color: #eaf2fb;
+  color: #217dbb;
+  padding: 2px 10px;
+  border-radius: 999px;
   margin-right: 8px;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
+  border: 1.2px solid #d0e6fa;
 }
-
 .post-actions {
   display: flex;
   align-items: center;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: #94a3b8;
 }
-
 .post-actions span {
   display: flex;
   align-items: center;
   margin-right: 16px;
   cursor: pointer;
 }
-
 .post-actions i {
   margin-right: 4px;
   font-size: 1rem;
 }
-
 .icon-like::before {
   content: '♡';
 }
-
 .icon-like.liked::before {
   content: '♥';
   color: #ef4444;
 }
-
 .icon-star::before {
   content: '☆';
 }
-
 .icon-star.collected::before {
   content: '★';
   color: #f59e0b;
 }
-
 .icon-comment::before {
   content: '💬';
 }
-
 .icon-delete::before {
   content: '🗑️';
 }
-
 .dialog-bg {
   position: fixed;
   top: 0;
@@ -647,62 +649,56 @@ onMounted(() => {
   justify-content: center;
   z-index: 1000;
 }
-
 .dialog-box {
   background-color: white;
-  border-radius: 16px;
-  padding: 24px;
+  border-radius: 20px;
+  padding: 32px;
   width: 90%;
-  max-width: 800px;
+  max-width: 700px;
   max-height: 90vh;
   overflow-y: auto;
+  box-shadow: 0 4px 24px rgba(52,152,219,0.10);
+  border: 1.5px solid #e0e6ed;
 }
-
 .detail-img {
   width: 100%;
   max-height: 400px;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 10px;
   margin: 16px 0;
+  border: 1.5px solid #e0e6ed;
 }
-
 .detail-content {
   margin: 16px 0;
   line-height: 1.6;
   white-space: pre-wrap;
 }
-
 .detail-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
   margin: 16px 0;
   color: #64748b;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
-
 .detail-actions {
   display: flex;
   margin: 16px 0;
   padding-bottom: 16px;
   border-bottom: 1px solid #eee;
 }
-
 .comment-section {
   margin: 16px 0;
 }
-
 .comment-item {
   padding: 12px 0;
   border-bottom: 1px solid #eee;
   position: relative;
 }
-
 .comment-author {
   font-weight: 500;
   color: #3498db;
 }
-
 .delete-comment {
   position: absolute;
   right: 0;
@@ -710,44 +706,48 @@ onMounted(() => {
   cursor: pointer;
   color: #ef4444;
 }
-
 .form-input {
   width: 100%;
   padding: 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border: 1.5px solid #e0e6ed;
+  border-radius: 999px;
   margin: 16px 0 8px;
+  font-size: 15px;
 }
-
 .submit-btn {
-  background-color: #3498db;
+  background: linear-gradient(90deg, #3498db 60%, #6dd5fa 100%);
   color: white;
   border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
+  padding: 8px 24px;
+  border-radius: 999px;
   cursor: pointer;
+  font-size: 15px;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(52,152,219,0.08);
+  transition: background 0.2s, box-shadow 0.2s;
 }
-
+.submit-btn:hover {
+  background: #217dbb;
+  color: #fff;
+}
 .dialog-actions {
   margin-top: 24px;
   text-align: right;
 }
-
 .cancel-btn {
-  background-color: #e2e8f0;
-  color: #64748b;
+  background-color: #eaf2f8;
+  color: #217dbb;
   border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
+  padding: 8px 20px;
+  border-radius: 999px;
   cursor: pointer;
+  font-size: 15px;
 }
-
 .empty-state {
   text-align: center;
   padding: 48px 0;
   color: #94a3b8;
 }
-
 .loading-state {
   display: flex;
   flex-direction: column;
@@ -756,7 +756,6 @@ onMounted(() => {
   padding: 48px 0;
   color: #94a3b8;
 }
-
 .loading-spinner {
   width: 40px;
   height: 40px;
@@ -766,40 +765,35 @@ onMounted(() => {
   animation: spin 1s linear infinite;
   margin-bottom: 16px;
 }
-
 .empty-comment {
   text-align: center;
   padding: 16px 0;
   color: #94a3b8;
   font-size: 0.9rem;
 }
-
 .pagination {
   display: flex;
   justify-content: center;
   align-items: center;
   margin-top: 24px;
 }
-
 .page-btn {
   background-color: #f1f5f9;
   border: none;
   padding: 8px 16px;
-  border-radius: 8px;
+  border-radius: 999px;
   cursor: pointer;
-  color: #64748b;
+  color: #217dbb;
+  font-size: 15px;
 }
-
 .page-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
-
 .page-info {
   margin: 0 16px;
   color: #64748b;
 }
-
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }

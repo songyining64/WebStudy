@@ -8,8 +8,6 @@ import com.cupk.entity.User;
 import com.cupk.service.AiConversationService;
 import com.cupk.service.Result;
 import com.cupk.service.UserService;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,18 +43,8 @@ public class AiConversationController {
         }
 
         String aiRawResponse = aiService.chat(sessionId, userInput, userId);
-        String aiReply = extractContentFromJson(aiRawResponse);
-        return Result.success(aiReply);
-    }
-
-    private String extractContentFromJson(String json) {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode root = mapper.readTree(json);
-            return root.path("choices").get(0).path("message").path("content").asText();
-        } catch (Exception e) {
-            return "AI服务异常，请稍后再试。";
-        }
+        // 直接返回原始 AI 响应给前端
+        return Result.success(aiRawResponse);
     }
 
     @GetMapping("/history")
@@ -85,3 +73,4 @@ public class AiConversationController {
     }
 
 }
+

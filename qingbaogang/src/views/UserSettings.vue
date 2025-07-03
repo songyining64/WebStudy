@@ -141,42 +141,53 @@ onMounted(() => {
 
 <style scoped>
 .settings-container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
+  max-width: 480px;
+  margin: 40px auto;
+  padding: 32px 24px;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(52,152,219,0.10);
+  border: 1.5px solid #e0e6ed;
 }
-
+.settings-container h2 {
+  text-align: center;
+  color: #217dbb;
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 32px;
+  border-left: 6px solid #3498db;
+  padding-left: 12px;
+  background: linear-gradient(90deg, #eaf2fb 60%, transparent);
+  border-radius: 6px;
+}
 .avatar-section {
   display: flex;
   justify-content: center;
   margin-bottom: 30px;
 }
-
 .avatar-uploader {
   text-align: center;
 }
-
 .avatar-upload-area {
-  width: 178px;
-  height: 178px;
-  border: 1px dashed #d9d9d9;
+  width: 128px;
+  height: 128px;
+  border: 2px dashed #d0e6fa;
   border-radius: 50%;
   cursor: pointer;
   position: relative;
   overflow: hidden;
   transition: border-color 0.3s;
+  background: #f4f8fb;
+  box-shadow: 0 2px 8px rgba(52,152,219,0.06);
 }
-
 .avatar-upload-area:hover {
-  border-color: #409EFF;
+  border-color: #3498db;
 }
-
 .avatar-preview {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-
 .upload-placeholder {
   display: flex;
   justify-content: center;
@@ -184,23 +195,60 @@ onMounted(() => {
   width: 100%;
   height: 100%;
 }
-
 .upload-icon {
-  font-size: 28px;
+  font-size: 32px;
   color: #8c939d;
 }
-
 .upload-text {
   position: absolute;
-  bottom: 20px;
+  bottom: 12px;
   left: 0;
   right: 0;
   text-align: center;
   color: #8c939d;
-  font-size: 14px;
+  font-size: 13px;
 }
-
 .settings-form {
   margin-top: 20px;
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 24px 18px 12px 18px;
+  box-shadow: 0 2px 8px rgba(52,152,219,0.04);
+  border: 1.5px solid #e0e6ed;
+}
+.el-form-item {
+  margin-bottom: 18px;
+}
+.el-input, .el-textarea__inner, .el-date-editor.el-input {
+  border-radius: 999px !important;
+  background: #fff !important;
+  border: 1.5px solid #e0e6ed !important;
+  font-size: 15px;
+  padding: 8px 16px;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+.el-input:focus, .el-textarea__inner:focus, .el-date-editor.el-input:focus {
+  border: 1.5px solid #3498db !important;
+  box-shadow: 0 2px 8px rgba(52,152,219,0.08);
+}
+.el-button--primary, .el-button[type="primary"] {
+  background: linear-gradient(90deg, #3498db 60%, #6dd5fa 100%);
+  color: #fff;
+  border-radius: 999px;
+  border: none;
+  font-weight: bold;
+  padding: 8px 32px;
+  font-size: 15px;
+  box-shadow: 0 2px 8px rgba(52,152,219,0.08);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.el-button--primary:hover, .el-button[type="primary"]:hover {
+  background: #217dbb;
+  color: #fff;
+}
+.el-button {
+  border-radius: 999px;
+  font-size: 15px;
+  padding: 8px 24px;
 }
 </style>
