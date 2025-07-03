@@ -163,23 +163,26 @@ public class PostLikeServiceImpl implements PostLikeService {
     }
 
     @Override
-    public com.baomidou.mybatisplus.core.metadata.IPage<Post> getLikedPostsByUserId(Long userId, int page, int size) {
-        logger.info("获取用户点赞的帖子列表，用户ID: {}, 页码: {}, 每页大小: {}", userId, page, size);
-        
+    @Transactional(rollbackFor = Exception.class)
+    public boolean deleteByPostId(Long postId) {
+        logger.info("删除帖子相关的所有点赞记录，帖子ID: {}", postId);
+
         try {
-            if (userId == null) {
-                throw new IllegalArgumentException("用户ID不能为空");
+            if (postId == null) {
+                logger.error("删除点赞记录失败：帖子ID为空");
+                return false;
             }
-            
-            // 创建分页参数
-            com.baomidou.mybatisplus.extension.plugins.pagination.Page<Post> pageParams = 
-                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size);
-            
-            // 调用Mapper查询用户点赞的帖子
-            return postLikeMapper.selectLikedPostsByUserId(pageParams, userId);
+
+            LambdaQueryWrapper<PostLike> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(PostLike::getPostId, postId);
+
+            int deleteCount = postLikeMapper.delete(wrapper);
+            logger.info("已删除帖子ID={}的点赞记录，数量: {}", postId, deleteCount);
+
+            return true;
         } catch (Exception e) {
-            logger.error("获取用户点赞的帖子列表时发生异常，用户ID: {}", userId, e);
-            throw e;
+            logger.error("删除帖子点赞记录时发生异常，帖子ID: {}", postId, e);
+            throw e; // 重新抛出异常以便事务回滚
         }
     }
 }

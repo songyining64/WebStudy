@@ -2,7 +2,7 @@
   <div class="audio-player">
     <div class="music-info">
       <div class="cover-wrapper">
-        <img :src="currentCover" class="cover-img" />
+        <img :src="currentCover" class="cover-img" alt="音乐封面" />
       </div>
       <div class="music-meta">
         <div class="music-title">{{ musicList[currentIndex].title }}</div>
@@ -85,7 +85,7 @@
             @click="playSong(index)"
           >
             <div class="playlist-item-info">
-              <img :src="song.cover" class="playlist-item-cover" />
+              <img :src="song.cover" class="playlist-item-cover" alt="歌曲封面" />
               <div class="playlist-item-details">
                 <div class="playlist-item-title">{{ song.title }}</div>
                 <div class="playlist-item-artist">{{ song.artist || '未知艺术家' }}</div>

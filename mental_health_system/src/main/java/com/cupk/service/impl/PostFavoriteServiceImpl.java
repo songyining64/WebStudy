@@ -57,4 +57,18 @@ public class PostFavoriteServiceImpl implements PostFavoriteService {
         logger.debug("获取帖子收藏数: {}, postId={}", count, postId);
         return count;
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean deleteByPostId(Long postId) {
+        try {
+            logger.info("删除帖子的所有收藏记录: postId={}", postId);
+            int result = mapper.deleteByPostId(postId);
+            logger.info("删除帖子收藏记录结果: 删除了{}条记录, postId={}", result, postId);
+            return true;
+        } catch (Exception e) {
+            logger.error("删除帖子收藏记录时发生异常: postId={}", postId, e);
+            throw e;
+        }
+    }
 }

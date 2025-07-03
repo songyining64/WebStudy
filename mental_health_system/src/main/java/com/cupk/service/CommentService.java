@@ -22,6 +22,14 @@ public interface CommentService {
     boolean deleteComment(Long commentId, Long userId);
 
     /**
+     * 删除帖子的所有评论
+     *
+     * @param postId 帖子ID
+     * @return 是否成功
+     */
+    boolean deleteByPostId(Long postId);
+
+    /**
      * 获取帖子的评论列表
      *
      * @param postId 帖子ID
