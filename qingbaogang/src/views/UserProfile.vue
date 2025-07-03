@@ -30,7 +30,7 @@
           暂无内容
         </div>
         <div v-else v-for="post in currentTabPosts" :key="post.id" class="post-card" @click="viewPost(post)">
-          <img v-if="post.images" :src="post.images.split(',')[0]" class="post-img" />
+          <img v-if="post.images" :src="getFirstImage(post.images)" class="post-img" alt="帖子图片" />
           <div class="post-info">
             <div class="post-title">{{ post.title }}</div>
             <div class="post-content">{{ post.content.slice(0, 48) }}{{ post.content.length>48?'...':'' }}</div>
@@ -71,7 +71,7 @@
     <div v-if="showDetailDialog" class="dialog-bg">
       <div class="dialog-box detail-box">
         <h3>{{ detailPost.title }}</h3>
-        <img v-if="detailPost.image" :src="detailPost.image" class="detail-img" alt="帖子图片" />
+        <img v-if="detailPost.images" :src="getFirstImage(detailPost.images)" class="detail-img" alt="帖子图片" />
         <div class="detail-content">{{ detailPost.content }}</div>
         <div class="detail-meta">
           <span>作者：{{ detailPost.username || detailPost.author }}</span>
@@ -149,6 +149,16 @@ const getPostTags = (post) => {
     return post.tags.split(',').filter(tag => tag.trim())
   }
   return post.tags
+}
+
+// 获取帖子的第一张图片
+const getFirstImage = (images) => {
+  if (!images) return ''
+  if (typeof images === 'string') {
+    const imageArray = images.split(',')
+    return imageArray[0]
+  }
+  return images
 }
 
 // 切换标签页
