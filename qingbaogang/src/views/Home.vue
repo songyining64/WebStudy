@@ -11,8 +11,8 @@
               :key="img"
               class="overlap-carousel-img"
               :class="{ active: idx === hoverIndex }"
-              @mouseenter="hoverIndex = idx"
-              @mouseleave="hoverIndex = null"
+              @mouseenter="handleCarouselMouseEnter(idx)"
+              @mouseleave="handleCarouselMouseLeave"
               @click="showDetail(idx)"
             >
               <img :src="getImgUrl(img)" :alt="`轮播图${idx+1}`" />
@@ -206,6 +206,7 @@ export default {
       hoverIndex: null,
       showModal: false,
       currentDetailIndex: 0,
+      autoCarouselTimer: null,
       imageDetails: [
         {
           title: "打工人职场情绪急救包",
@@ -725,6 +726,12 @@ export default {
       });
     }
   },
+  mounted() {
+    this.startAutoCarousel();
+  },
+  beforeUnmount() {
+    this.clearAutoCarousel();
+  },
   methods: {
     getImgUrl(img) {
       return new URL(`../assets/${img}`, import.meta.url).href;
@@ -835,6 +842,29 @@ export default {
       this.showModal = false;
       // 移除禁止滚动类
       document.body.classList.remove('modal-open');
+    },
+    startAutoCarousel() {
+      this.clearAutoCarousel();
+      this.autoCarouselTimer = setInterval(() => {
+        if (this.hoverIndex === null) {
+          this.hoverIndex = 0;
+        } else {
+          this.hoverIndex = (this.hoverIndex + 1) % this.images.length;
+        }
+      }, 3000);
+    },
+    clearAutoCarousel() {
+      if (this.autoCarouselTimer) {
+        clearInterval(this.autoCarouselTimer);
+        this.autoCarouselTimer = null;
+      }
+    },
+    handleCarouselMouseEnter(idx) {
+      this.hoverIndex = idx;
+      this.clearAutoCarousel();
+    },
+    handleCarouselMouseLeave() {
+      this.startAutoCarousel();
     }
   }
 }
@@ -849,41 +879,43 @@ export default {
   left: 0;
   z-index: -1;
   background: url('@/assets/shouye.png') no-repeat center center fixed;
-  background-size: 100% 100%;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-  -webkit-backface-visibility: hidden;
-  -webkit-transform: translateZ(0);
-  backface-visibility: hidden;
-  transform: translateZ(0);
+  background-size: cover;
+  filter: blur(2px) brightness(0.98);
 }
 .home-main {
-  padding: 40px 0 0 0;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 0 0 0;
   min-height: 92vh;
   background: transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.overlap-carousel-area,
+.music-player-top,
+.post-card {
+  border-radius: 22px;
+  box-shadow: 0 6px 32px rgba(52,152,219,0.13);
+  border: 2px solid #e0e6ed;
+  width: 100%;
+  margin: 0;
 }
 .overlap-carousel-area {
-  background: url('@/assets/shouye1.jpg') no-repeat center center;
-  background-size: cover;
-  border-radius: 18px;
-  box-shadow: none;
-  padding: 40px 48px;
-  width: 100vw;
-  max-width: none;
+  background: #fff;
+  padding: 18px 0 18px 0;
+  min-height: 320px;
   position: relative;
   overflow: hidden;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 500px;
-  margin: 0 auto 40px auto;
-  border: none;
 }
 .overlap-carousel-wrapper {
   width: 100%;
   overflow: visible;
   position: relative;
-  height: 500px;
+  height: 420px;
   display: flex;
   justify-content: center;
 }
@@ -898,40 +930,43 @@ export default {
 .overlap-carousel-img {
   position: relative;
   z-index: 1;
-  margin-left: -100px;
-  transition: 
-    filter 0.4s,
-    transform 0.4s,
-    z-index 0.2s;
+  margin-left: -70px;
+  transition: filter 0.4s, transform 0.4s, z-index 0.2s, box-shadow 0.2s;
   filter: blur(1.2px) grayscale(30%) brightness(0.92);
   transform: scale(0.82);
   box-shadow: 0 2px 12px rgba(0,0,0,0.10);
-  border-radius: 18px;
+  border-radius: 20px;
   cursor: pointer;
+  overflow: hidden;
+  border: 2.5px solid transparent;
 }
 .overlap-carousel-img:first-child {
   margin-left: 0;
 }
 .overlap-carousel-img img {
-  width: 380px;
-  height: 480px;
+  width: 320px;
+  height: 380px;
   object-fit: cover;
   border-radius: 18px;
   display: block;
+  transition: transform 0.3s;
 }
 .overlap-carousel-img.active {
   filter: none;
-  transform: scale(1.08) translateY(-16px);
+  transform: scale(1.10) translateY(-10px);
   z-index: 2;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  box-shadow: 0 10px 40px rgba(52,152,219,0.18);
+  border: 2.5px solid #3498db;
 }
-/* 鼠标悬停时，未激活图片更虚化 */
+.overlap-carousel-img:hover {
+  border: 2.5px solid #217dbb;
+  box-shadow: 0 10px 40px rgba(52,152,219,0.22);
+}
 .overlap-carousel-track:hover .overlap-carousel-img:not(.active) {
   filter: blur(2.5px) grayscale(50%) brightness(0.8);
   transform: scale(0.78);
   z-index: 1;
 }
-
 .music-player {
   max-width: 1300px;
   margin: 0 auto;
@@ -944,17 +979,18 @@ export default {
   align-items: center;
 }
 .music-player-top {
-  margin: 40px auto;
-  max-width: 340px;
-  min-width: 260px;
-  position: relative;
-  box-shadow: 0 6px 32px 0 rgba(52,152,219,0.10), 0 1.5px 6px 0 rgba(44,62,80,0.06);
-  border-radius: 18px;
+  margin: 0;
+  max-width: none;
+  min-width: 0;
   background: #fff;
-  padding: 18px 18px 22px 18px;
+  padding: 18px 28px 18px 28px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 8px;
+  width: 100%;
+  border-radius: 22px;
+  box-shadow: 0 6px 32px rgba(52,152,219,0.13);
 }
 .music-info {
   display: flex;
@@ -984,9 +1020,9 @@ export default {
   align-items: flex-start;
 }
 .music-title {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 700;
-  color: #222;
+  color: #217dbb;
   margin-bottom: 6px;
 }
 .music-artist {
@@ -1000,21 +1036,23 @@ export default {
 }
 .progress-bar-bg {
   width: 100%;
-  height: 6px;
+  height: 10px;
   background: #e0e7ef;
-  border-radius: 3px;
+  border-radius: 5px;
   overflow: hidden;
   cursor: pointer;
+  margin-top: 8px;
+  position: relative;
 }
 .progress-bar {
   height: 100%;
   background: linear-gradient(90deg, #4fc3f7, #2980b9);
-  border-radius: 3px;
+  border-radius: 5px;
   transition: width 0.3s;
 }
 .progress-handle {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: #fff;
   position: absolute;
@@ -1022,6 +1060,7 @@ export default {
   left: 0;
   transform: translate(-50%, -50%);
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+  border: 2px solid #3498db;
 }
 .music-controls {
   display: flex;
@@ -1031,12 +1070,12 @@ export default {
   margin-top: 8px;
   width: 100%;
 }
-.music-btn {
-  background: #f2f6fa;
+.music-btn, .mode-btn, .volume-btn, .playlist-btn {
+  background: linear-gradient(90deg, #f2f6fa 60%, #eaf2fb 100%);
   border: none;
   border-radius: 50%;
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   font-size: 1.5rem;
   color: #2980b9;
   box-shadow: 0 2px 8px rgba(52,152,219,0.10);
@@ -1046,8 +1085,8 @@ export default {
   align-items: center;
   justify-content: center;
 }
-.music-btn:hover {
-  background: #3498db;
+.music-btn:hover, .mode-btn:hover, .volume-btn:hover, .playlist-btn:hover {
+  background: linear-gradient(90deg, #3498db 60%, #4fc3f7 100%);
   color: #fff;
 }
 .music-extra-controls {
@@ -1060,92 +1099,6 @@ export default {
   display: flex;
   align-items: center;
 }
-.mode-btn {
-  background: #f2f6fa;
-  border: none;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  font-size: 1.5rem;
-  color: #2980b9;
-  box-shadow: 0 2px 8px rgba(52,152,219,0.10);
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.mode-btn:hover {
-  background: #3498db;
-  color: #fff;
-}
-.volume-control {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.volume-btn {
-  background: #f2f6fa;
-  border: none;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  font-size: 1.2rem;
-  color: #2980b9;
-  box-shadow: 0 2px 8px rgba(52,152,219,0.10);
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.volume-btn:hover {
-  background: #3498db;
-  color: #fff;
-}
-.volume-slider {
-  width: 60px;
-  height: 6px;
-  background: #e0e7ef;
-  border-radius: 3px;
-  overflow: hidden;
-  cursor: pointer;
-  position: relative;
-}
-.volume-bar {
-  height: 100%;
-  width: 100%;
-  position: relative;
-}
-.volume-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #4fc3f7, #2980b9);
-  border-radius: 3px;
-  transition: width 0.3s;
-}
-.playlist-control {
-  display: flex;
-  align-items: center;
-}
-.playlist-btn {
-  background: #f2f6fa;
-  border: none;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  font-size: 1.5rem;
-  color: #2980b9;
-  box-shadow: 0 2px 8px rgba(52,152,219,0.10);
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.playlist-btn:hover {
-  background: #3498db;
-  color: #fff;
-}
 .post-area {
   max-width: 1300px;
   margin: 0 auto;
@@ -1153,36 +1106,29 @@ export default {
 .post-area-top {
   display: flex;
   justify-content: center;
-  margin-top: 40px;
+  margin-top: 0;
 }
 .post-card {
-  background: url('@/assets/shouye1.jpg') no-repeat center center;
-  background-size: cover;
-  border-radius: 18px;
-  box-shadow: 0 6px 32px 0 rgba(52,152,219,0.10);
-  padding: 40px 48px;
-  max-width: 900px;
+  background: #fff;
+  padding: 28px 36px;
   width: 100%;
   position: relative;
   overflow: hidden;
-}
-.post-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.6); /* 进一步降低透明度 */
-  z-index: 1;
+  margin: 0;
+  border-radius: 22px;
+  box-shadow: 0 6px 32px rgba(52,152,219,0.13);
 }
 .post-card h2 {
-  font-size: 1.7rem;
-  color: #2980b9;
+  font-size: 2rem;
+  color: #217dbb;
   font-weight: 700;
   margin-bottom: 18px;
   position: relative;
   z-index: 2;
+  border-left: 7px solid #3498db;
+  padding-left: 14px;
+  background: linear-gradient(90deg, #eaf2fb 60%, transparent);
+  border-radius: 8px;
 }
 .post-pre {
   font-size: 1.08rem;
@@ -1199,13 +1145,38 @@ export default {
   z-index: 2;
 }
 @media (max-width: 900px) {
-  .content-flex-area {
-    flex-direction: column;
-    gap: 24px;
+  .home-main {
+    max-width: 100vw;
+    padding: 8px 2vw 0 2vw;
+    gap: 12px;
   }
-  .music-player-side {
-    max-width: 100%;
-    min-width: 0;
+  .overlap-carousel-area {
+    min-height: 180px;
+    padding: 8px 0;
+    border-radius: 14px;
+  }
+  .overlap-carousel-img img {
+    width: 120px;
+    height: 140px;
+    border-radius: 14px;
+  }
+  .overlap-carousel-wrapper {
+    height: 140px;
+  }
+  .music-player-top {
+    max-width: 98vw;
+    padding: 6px 2vw 8px 2vw;
+    border-radius: 14px;
+  }
+  .post-card {
+    padding: 8px 4px;
+    max-width: 98vw;
+    border-radius: 14px;
+  }
+  .post-card h2 {
+    font-size: 1.1rem;
+    padding-left: 6px;
+    border-radius: 4px;
   }
 }
 
