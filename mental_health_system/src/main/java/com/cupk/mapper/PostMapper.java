@@ -113,4 +113,31 @@ public interface PostMapper extends BaseMapper<Post> {
             @Param("category") String category,
             @Param("sortBy") String sortBy,
             @Param("sortOrder") String sortOrder);
+
+    /**
+     * 获取用户发布的帖子
+     * 
+     * @param page   分页参数
+     * @param userId 用户ID
+     * @return 用户发布的帖子分页数据
+     */
+    @Select("SELECT p.*, u.username, u.avatar FROM post p " +
+            "LEFT JOIN user u ON p.user_id = u.id " +
+            "WHERE p.user_id = #{userId} " +
+            "ORDER BY p.create_time DESC")
+    IPage<Post> selectPostsByUserId(Page<Post> page, @Param("userId") Long userId);
+    
+    /**
+     * 获取用户收藏的帖子
+     * 
+     * @param page   分页参数
+     * @param userId 用户ID
+     * @return 用户收藏的帖子分页数据
+     */
+    @Select("SELECT p.*, u.username, u.avatar FROM post p " +
+            "LEFT JOIN user u ON p.user_id = u.id " +
+            "LEFT JOIN post_favorite pf ON p.id = pf.post_id " +
+            "WHERE pf.user_id = #{userId} " +
+            "ORDER BY pf.create_time DESC")
+    IPage<Post> selectFavoritePostsByUserId(Page<Post> page, @Param("userId") Long userId);
 }
