@@ -1,6 +1,7 @@
 package com.cupk.controller;
 
 import com.cupk.entity.EmotionRecord;
+import com.cupk.service.EmotionRecordService;
 import com.cupk.service.Result;
 import com.cupk.mapper.EmotionRecordMapper;
 import org.slf4j.Logger;
@@ -28,14 +29,17 @@ public class EmotionRecordController {
     @Autowired
     private com.cupk.client.DeepSeekClient deepSeekClient;
 
+    @Autowired
+    private EmotionRecordService emotionRecordService;
+
     /**
      * 查询所有情绪记录
      */
     @GetMapping
     public Result<List<EmotionRecord>> list() {
         try {
-            List<EmotionRecord> records = emotionRecordMapper.selectList(null);
-            return Result.success(records);
+            // 使用分页查询第一页，获取较小数据量
+            return Result.success(emotionRecordService.pageEmotionRecords(1, 50, null).getRecords());
         } catch (Exception e) {
             logger.error("获取情绪记录列表失败", e);
             return Result.error("获取情绪记录列表失败");
@@ -48,11 +52,7 @@ public class EmotionRecordController {
     @GetMapping("/user/{userId}")
     public Result<List<EmotionRecord>> getByUserId(@PathVariable Long userId) {
         try {
-            List<EmotionRecord> records = emotionRecordMapper.selectList(
-                    new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<EmotionRecord>()
-                            .eq("user_id", userId)
-                            .orderByDesc("record_time"));
-            return Result.success(records);
+            return Result.success(emotionRecordService.getUserRecords(userId, 1, 50).getRecords());
         } catch (Exception e) {
             logger.error("获取用户情绪记录列表失败: userId={}", userId, e);
             return Result.error("获取用户情绪记录列表失败");
@@ -71,9 +71,8 @@ public class EmotionRecordController {
 
             // 读取 persona prompt
             String persona = new String(
-                getClass().getClassLoader().getResourceAsStream("prompt/deepseek-persona.txt").readAllBytes(),
-                java.nio.charset.StandardCharsets.UTF_8
-            );
+                    getClass().getClassLoader().getResourceAsStream("prompt/deepseek-persona.txt").readAllBytes(),
+                    java.nio.charset.StandardCharsets.UTF_8);
             String assessmentContext = payload.get("answers").toString();
             String prompt = persona.replace("{{ assessment_context }}", assessmentContext);
 
@@ -84,7 +83,11 @@ public class EmotionRecordController {
             // 存AI报告到数据库
             record.setSuggestions(aiReport);
             record.setRecordTime(java.time.LocalDateTime.now());
-            emotionRecordMapper.insert(record);
+            // 确保设置了必要字段
+            record.setEmotion("AI分析");
+            record.setRemark("AI情绪分析结果");
+            // 使用 service 添加记录
+            emotionRecordService.addRecord(record);
 
             // 返回AI报告给前端
             Map<String, Object> result = new HashMap<>();

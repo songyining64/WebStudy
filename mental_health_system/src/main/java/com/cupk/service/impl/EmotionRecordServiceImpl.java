@@ -8,6 +8,7 @@ import com.cupk.entity.EmotionRecord;
 import com.cupk.mapper.EmotionRecordMapper;
 import com.cupk.service.EmotionRecordService;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 
@@ -33,5 +34,30 @@ public class EmotionRecordServiceImpl extends ServiceImpl<EmotionRecordMapper, E
     @Override
     public long count() {
         return count(null);
+    }
+
+    @Override
+    public IPage<EmotionRecord> pageEmotionRecords(int page, int size, String keyword) {
+        Page<EmotionRecord> pageParam = new Page<>(page, size);
+
+        try {
+            if (StringUtils.hasText(keyword)) {
+                // 使用自定义方法搜索
+                return this.baseMapper.pageEmotionRecords(pageParam, keyword);
+            } else {
+                // 使用自定义方法但不带关键词
+                return this.baseMapper.pageEmotionRecords(pageParam, null);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("查询情绪记录失败: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public boolean deleteEmotionRecord(Long id) {
+        if (id == null) {
+            return false;
+        }
+        return this.removeById(id);
     }
 }

@@ -50,7 +50,6 @@
 
       <button type="submit" class="submit-btn" :disabled="isLoading">
         <span>{{ isLoading ? '登录中...' : '登 录' }}</span>
-        <span>{{ isLoading ? '登录中...' : '登 录' }}</span>
       </button>
     </form>
 
@@ -157,17 +156,60 @@ export default {
       }
       this.error = '';
       this.isLoading = true;
+      
       try {
-        // 调用后端登录接口，参数为 username 和 password
-        const res = await request.post('/api/user/login', {
-          username: this.credentials.email, // 用邮箱作为用户名
-          password: this.credentials.password
-        });
+        // 开发环境下，如果后端连接不上，使用模拟登录
+        let res;
+        
+        try {
+          // 尝试调用后端登录接口
+          res = await request.post('/api/user/login', {
+            username: this.credentials.email, // 用邮箱作为用户名
+            password: this.credentials.password
+          });
+        } catch (error) {
+          // 如果在开发环境中且请求失败，使用模拟数据
+          if (import.meta.env.DEV) {
+            console.log('开发环境：使用模拟登录数据');
+            
+            // 模拟管理员登录
+            if (this.credentials.email.includes('admin')) {
+              res = {
+                code: 200,
+                data: {
+                  token: 'mock-admin-token',
+                  userId: 1,
+                  username: 'admin',
+                  role: 'admin',
+                  avatar: null
+                }
+              };
+            } else {
+              // 模拟普通用户登录
+              res = {
+                code: 200,
+                data: {
+                  token: 'mock-user-token',
+                  userId: 2,
+                  username: this.credentials.email.split('@')[0],
+                  role: 'user',
+                  avatar: null
+                }
+              };
+            }
+          } else {
+            // 生产环境中，继续抛出错误
+            throw error;
+          }
+        }
+        
         if (res.code === 200) {
           // 保存token
           localStorage.setItem('authToken', res.data.token);
           // 新增：保存userId
           localStorage.setItem('userId', res.data.userId);
+          // 保存用户名
+          localStorage.setItem('username', res.data.username);
           // 保存角色
           localStorage.setItem('userRole', res.data.role);
           // 设置isAdmin状态
@@ -190,12 +232,6 @@ export default {
           });
           console.log('Pinia userId:', userStore.userId)
           await this.$nextTick();
-          // 根据角色跳转
-          if (res.data.role === 'admin') {
-            await this.$router.push('/admin');
-          } else {
-            await this.$router.push('/home');
-          }
           // 根据角色跳转
           if (res.data.role === 'admin') {
             await this.$router.push('/admin');

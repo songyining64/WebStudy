@@ -124,13 +124,14 @@ export const getPostComments = (postId) => {
 }
 
 export const deleteComment = (commentId) => {
-    if (!commentId) {
+    // 修复：如果传进来的是对象，自动取 id 字段
+    const realId = (typeof commentId === 'object' && commentId !== null) ? commentId.id : commentId;
+    if (!realId) {
         console.error('删除评论失败：无效的评论ID');
         return Promise.reject(new Error('无效的评论ID'));
     }
-
-    const processedCommentId = typeof commentId === 'string' && commentId.length <= 10 ?
-        parseInt(commentId, 10) : commentId.toString();
+    const processedCommentId = typeof realId === 'string' && realId.length <= 10 ?
+        parseInt(realId, 10) : realId.toString();
 
     console.log(`删除评论，评论ID=${processedCommentId}(${typeof processedCommentId})`);
     return request.delete(`/api/comments/${processedCommentId}`);

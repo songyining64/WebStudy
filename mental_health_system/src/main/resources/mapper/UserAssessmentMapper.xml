@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cupk.mapper.UserAssessmentMapper">
+
+    <!-- 基本结果映射 -->
+    <resultMap id="BaseResultMap" type="com.cupk.entity.UserAssessment">
+        <id column="id" property="id" />
+        <result column="user_id" property="userId" />
+        <result column="username" property="username" />
+        <result column="assessment_title" property="assessmentTitle" />
+        <result column="score" property="score" />
+        <result column="submit_time" property="submitTime" />
+        <result column="detail" property="detail" />
+        <!-- 暂时注释掉缺失的字段 -->
+        <!-- <result column="questionnaire_id" property="questionnaireId" /> -->
+        <!-- <result column="answers" property="answers" /> -->
+        <!-- <result column="content" property="content" /> -->
+        <!-- <result column="suggestions" property="suggestions" /> -->
+        <!-- <result column="report" property="report" /> -->
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, user_id, username, assessment_title, score, submit_time, detail
+    </sql>
+
+    <!-- 分页查询用户评估问卷，支持按用户名和问卷标题搜索 -->
+    <select id="pageUserAssessments" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List" />
+        FROM user_assessment
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    username LIKE CONCAT('%', #{keyword}, '%')
+                    OR assessment_title LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+        ORDER BY submit_time DESC
+    </select>
+</mapper> 

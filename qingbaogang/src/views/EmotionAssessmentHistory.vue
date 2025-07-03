@@ -3,11 +3,14 @@
     <h2>历史情绪评估记录</h2>
     <div v-if="records.length === 0">暂无历史记录</div>
     <div v-for="rec in records" :key="rec.id" class="record-card">
-      <div><b>评估时间：</b>{{ rec.recordTime }}</div>
-      <div><b>问卷答案：</b>{{ rec.content }}</div>
-      <div><b>AI评估报告：</b>
+      <div><b>评估时间：</b>{{ formatTime(rec.recordTime) }}</div>
+      <div><b>情绪类型：</b>{{ rec.emotion || '未知' }}</div>
+      <div v-if="rec.remark"><b>备注：</b>{{ rec.remark }}</div>
+      <div v-if="rec.content"><b>问卷答案：</b>{{ rec.content }}</div>
+      <div v-if="rec.suggestions"><b>AI评估报告：</b>
         <div class="ai-report" v-html="rec.suggestions"></div>
       </div>
+      <div v-else><b>暂无AI评估报告</b></div>
     </div>
     <button @click="back">返回</button>
   </div>
@@ -19,6 +22,23 @@ import { useRouter } from 'vue-router';
 
 const records = ref([]);
 const router = useRouter();
+
+// 格式化时间
+function formatTime(time) {
+  if (!time) return '未知时间';
+  try {
+    const date = new Date(time);
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (e) {
+    return time;
+  }
+}
 
 onMounted(async () => {
   // 假设你有 userId
