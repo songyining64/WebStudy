@@ -34,7 +34,75 @@ function back() {
 </script>
 
 <style scoped>
-.history-layout { max-width: 700px; margin: 40px auto; background: #fff; padding: 32px; border-radius: 8px; }
-.record-card { border: 1px solid #e0e6ed; border-radius: 8px; padding: 16px; margin-bottom: 18px; }
-.ai-report { background: #f6faff; padding: 10px; border-radius: 6px; margin-top: 6px; }
+.history-layout {
+  max-width: 700px;
+  margin: 40px auto;
+  background: #fff;
+  padding: 32px;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(52,152,219,0.10);
+  border: 1.5px solid #e0e6ed;
+}
+.record-card {
+  border: 1.5px solid #d0e6fa;
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+  background: linear-gradient(90deg, #f8fafc 60%, #fff 100%);
+  box-shadow: 0 2px 12px rgba(52,152,219,0.08);
+}
+.ai-report {
+  background: #f6faff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  margin-top: 6px;
+  border-left: 5px solid #3498db;
+  color: #217dbb;
+}
+button {
+  background: linear-gradient(90deg, #3498db 60%, #4fc3f7 100%);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 18px;
+  box-shadow: 0 2px 8px rgba(52,152,219,0.10);
+  transition: background 0.2s;
+}
+button:hover {
+  background: linear-gradient(90deg, #217dbb 60%, #3498db 100%);
+}
+h2 {
+  color: #217dbb;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+  border-left: 7px solid #3498db;
+  padding-left: 14px;
+  background: linear-gradient(90deg, #eaf2fb 60%, transparent);
+  border-radius: 8px;
+}
+@media (max-width: 700px) {
+  .history-layout {
+    padding: 12px;
+    border-radius: 12px;
+  }
+  .record-card {
+    padding: 10px 6px;
+    border-radius: 8px;
+  }
+  h2 {
+    font-size: 1.1rem;
+    padding-left: 6px;
+    border-radius: 4px;
+  }
+  button {
+    padding: 8px 12px;
+    font-size: 15px;
+    border-radius: 8px;
+  }
+}
 </style>
