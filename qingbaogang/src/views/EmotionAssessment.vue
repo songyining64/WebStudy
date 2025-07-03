@@ -1,18 +1,9 @@
 <template>
   <div class="chatbot-layout">
     <div class="session-list">
-      <button class="new-session-btn" @click="newSession">+ 新建会话</button>
-      <button class="emotion-eval-btn" @click="startEmotionAssessment">情绪评估</button>
-      <ul>
-        <li
-          v-for="s in sessionList"
-          :key="s.id"
-          :class="{active: s.id === currentSessionId}"
-          @click="switchSession(s.id)"
-        >
-          {{ s.title }}
-        </li>
-      </ul>
+      <button class="new-session-btn" @click="back">返回聊天</button>
+      <button class="new-session-btn" @click="router.push('/emotion-assessment-history')">历史记录</button>
+      <div class="session-title">情绪评估问卷</div>
     </div>
     <div class="chatbot-container">
       <div class="chat-header">情波港·AI柴郡</div>
@@ -26,63 +17,106 @@
           <div class="bubble" v-else>{{ msg.content }}</div>
         </div>
       </div>
-      <div class="chat-input-area">
+      <div class="chat-input-area" v-if="!finished">
         <input
-            v-model="input"
-            @keyup.enter="sendMsg"
-            class="chat-input"
-            placeholder="请输入您的问题..."
-            maxlength="200"
+          v-model="input"
+          @keyup.enter="send"
+          class="chat-input"
+          placeholder="请输入您的回答..."
+          maxlength="200"
+          :disabled="waiting"
         />
-        <button @click="sendMsg" class="send-btn">发送</button>
+        <button @click="send" class="send-btn" :disabled="waiting">发送</button>
+      </div>
+      <div v-if="finished && report" class="report-area">
+        <div class="chat-header">AI评估报告</div>
+        <div class="bubble" v-html="report"></div>
+        <button class="send-btn" @click="back">返回聊天</button>
       </div>
     </div>
-    <EmotionAssessmentDialog
-      :visible="showAssessmentDialog"
-      :questions="questions"
-      @close="showAssessmentDialog = false"
-    />
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
-import * as logic from './ChatBot.logic.js';
-
+import { ref, onMounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 
-const {
-  userId,
-  sessionList,
-  currentSessionId,
-  messages,
-  input,
-  newSession,
-  switchSession,
-  sendMsg,
-  scrollToBottom,
-  fetchSessionList,
-} = logic;
-
-const showAssessmentDialog = ref(false);
 const questions = ref([]);
+const answers = ref([]);
+const current = ref(0);
+const input = ref('');
+const messages = ref([]);
+const finished = ref(false);
+const report = ref('');
+const waiting = ref(false);
+const messagesRef = ref(null);
 const router = useRouter();
 
+function scrollToBottom() {
+  nextTick(() => {
+    if (messagesRef.value) {
+      messagesRef.value.scrollTop = messagesRef.value.scrollHeight;
+    }
+  });
+}
+
 onMounted(async () => {
-  await fetchSessionList();
-  if (sessionList.value.length > 0) {
-    await switchSession(sessionList.value[0].id);
+  // 获取问卷
+  const res = await fetch('/api/questionnaire');
+  const data = await res.json();
+  questions.value = data || [];
+  if (questions.value.length > 0) {
+    messages.value.push({ role: 'ai', content: questions.value[0].text });
+    scrollToBottom();
   } else {
-    await newSession();
+    messages.value.push({ role: 'ai', content: '问卷加载失败，请稍后重试。' });
   }
 });
 
-function startEmotionAssessment() {
-  router.push('/emotion-assessment');
+async function send() {
+  if (!input.value.trim() || finished.value) return;
+  // 用户回答
+  messages.value.push({ role: 'user', content: input.value });
+  answers.value.push(input.value);
+  input.value = '';
+  scrollToBottom();
+  // 下一个问题
+  current.value++;
+  if (current.value < questions.value.length) {
+    // AI发下一个问题
+    setTimeout(() => {
+      messages.value.push({ role: 'ai', content: questions.value[current.value].text });
+      scrollToBottom();
+    }, 400); // 模拟AI思考
+  } else {
+    // 全部答完，提交后端
+    finished.value = true;
+    waiting.value = true;
+    messages.value.push({ role: 'ai', content: '正在生成评估报告，请稍候...' });
+    scrollToBottom();
+    const res = await fetch('/api/emotion-record/record', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: 1, // 实际项目用真实用户ID
+        answers: answers.value,
+      }),
+    });
+    const data = await res.json();
+    console.log('后端返回:', data);
+    report.value = data.data?.report || data.data || '评估完成，未返回报告。';
+    waiting.value = false;
+    scrollToBottom();
+  }
+}
+
+function back() {
+  router.push('/chatbot');
 }
 </script>
 
 <style scoped>
+/* 复用 ChatBot.vue 的样式 */
 :global(body) {
   margin: 0;
   padding: 0;
@@ -98,11 +132,18 @@ function startEmotionAssessment() {
   width: 260px;
   background: #f4f8fb;
   border-right: 1.5px solid #e0e6ed;
-  padding: 0 0 0 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   position: relative;
+}
+.session-title {
+  margin: 24px 16px 12px 16px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #217dbb;
+  text-align: center;
 }
 .new-session-btn {
   margin: 24px 16px 12px 16px;
@@ -113,40 +154,6 @@ function startEmotionAssessment() {
   border: none;
   border-radius: 8px;
   cursor: pointer;
-}
-.emotion-eval-btn {
-  position: absolute;
-  left: 20px;
-  bottom: 30px;
-  width: 200px;
-  background: #ffb347;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 12px 0;
-  font-size: 16px;
-  cursor: pointer;
-  z-index: 10;
-}
-.session-list ul {
-  list-style: none;
-  padding: 0 0 0 0;
-  margin: 0;
-  flex: 1;
-  overflow-y: auto;
-}
-.session-list li {
-  padding: 14px 18px;
-  cursor: pointer;
-  border-bottom: 1px solid #e0e6ed;
-  font-size: 15px;
-  color: #333;
-  transition: background 0.2s;
-}
-.session-list li.active,
-.session-list li:hover {
-  background: #eaf2fb;
-  color: #217dbb;
 }
 .chatbot-container {
   flex: 1;
@@ -203,29 +210,6 @@ function startEmotionAssessment() {
   background: #eaf2fb;
   color: #222;
 }
-.bubble :deep(pre) {
-  background: #f4f4f4;
-  padding: 10px;
-  border-radius: 6px;
-  overflow-x: auto;
-  font-size: 15px;
-}
-.bubble :deep(code) {
-  background: #f4f4f4;
-  padding: 2px 6px;
-  border-radius: 4px;
-  color: #c7254e;
-  font-size: 95%;
-}
-.bubble :deep(ul), .bubble :deep(ol) {
-  margin: 8px 0 8px 20px;
-}
-.bubble :deep(strong) {
-  font-weight: bold;
-}
-.bubble :deep(em) {
-  font-style: italic;
-}
 .chat-msg.user .bubble {
   background: #d0e6fa;
   color: #222;
@@ -262,21 +246,7 @@ function startEmotionAssessment() {
 .send-btn:hover {
   background: #217dbb;
 }
-.bubble .emotion-card {
-  background: #f6faff;
-  border-left: 5px solid #3498db;
-  border-radius: 8px;
-  padding: 10px 16px;
-  margin-bottom: 10px;
-  font-size: 15px;
-  color: #222;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px 24px;
-}
-.bubble .emotion-card span {
-  margin-right: 18px;
-  min-width: 90px;
-  display: inline-block;
+.report-area {
+  padding: 32px;
 }
 </style>
