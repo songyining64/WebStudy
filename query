@@ -1,1 +1,213 @@
 mysql
+
+-- 创建数据库
+CREATE DATABASE IF NOT EXISTS mental_health_system DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+
+-- 使用数据库
+USE mental_health_system;
+
+-- 用户表
+CREATE TABLE `user` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '用户ID',
+    `username` VARCHAR(50) NOT NULL COMMENT '用户名',
+    `password` VARCHAR(255) NOT NULL COMMENT '密码',
+    `email` VARCHAR(100) NOT NULL COMMENT '邮箱',
+    `role` VARCHAR(20) NOT NULL COMMENT '角色',
+    `avatar` VARCHAR(255) COMMENT '头像URL',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_username` (`username`),
+    UNIQUE KEY `uk_email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
+
+-- AI对话表
+CREATE TABLE `ai_conversation` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '对话ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `session_id` VARCHAR(50) COMMENT '会话标识',
+    `user_message` TEXT NOT NULL COMMENT '用户消息',
+    `ai_response` TEXT NOT NULL COMMENT 'AI回复',
+    `emotion_analysis` TEXT COMMENT '情绪分析',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_user_id` (`user_id`),
+    KEY `idx_session_id` (`session_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI对话记录表';
+
+-- 帖子表
+CREATE TABLE `post` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '帖子ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `title` VARCHAR(255) NOT NULL COMMENT '标题',
+    `content` TEXT NOT NULL COMMENT '内容',
+    `images` TEXT COMMENT '图片URLs',
+    `tags` VARCHAR(255) COMMENT '标签',
+    `category` VARCHAR(50) COMMENT '分类',
+    `like_count` INT DEFAULT 0 COMMENT '点赞数',
+    `comment_count` INT DEFAULT 0 COMMENT '评论数',
+    `status` INT DEFAULT 1 COMMENT '状态',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_user_id` (`user_id`),
+    KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='帖子表';
+
+-- 情绪记录表
+CREATE TABLE `emotion_record` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '记录ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `content` TEXT NOT NULL COMMENT '内容',
+    `emotion_type` VARCHAR(50) NOT NULL COMMENT '情绪类型',
+    `confidence` DECIMAL(5,4) NOT NULL COMMENT '置信度',
+    `record_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '记录时间',
+    `suggestions` TEXT COMMENT '建议',
+    PRIMARY KEY (`id`),
+    KEY `idx_user_id` (`user_id`),
+    KEY `idx_record_time` (`record_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='情绪记录表';
+
+-- 评论表
+CREATE TABLE `comment` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '评论ID',
+    `post_id` BIGINT NOT NULL COMMENT '帖子ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `content` TEXT NOT NULL COMMENT '评论内容',
+    `parent_id` BIGINT COMMENT '父评论ID',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `status` INT DEFAULT 1 COMMENT '状态',
+    PRIMARY KEY (`id`),
+    KEY `idx_post_id` (`post_id`),
+    KEY `idx_user_id` (`user_id`),
+    KEY `idx_parent_id` (`parent_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='评论表';
+
+-- 帖子点赞表
+CREATE TABLE `post_like` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '点赞ID',
+    `post_id` BIGINT NOT NULL COMMENT '帖子ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_post_user` (`post_id`, `user_id`),
+    KEY `idx_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='帖子点赞表';
+
+-- 评论点赞表
+CREATE TABLE `comment_like` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '点赞ID',
+    `comment_id` BIGINT NOT NULL COMMENT '评论ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_comment_user` (`comment_id`, `user_id`),
+    KEY `idx_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='评论点赞表';
+
+-- 帖子收藏表
+CREATE TABLE `post_favorite` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '收藏ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `post_id` BIGINT NOT NULL COMMENT '帖子ID',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_user_post` (`user_id`, `post_id`),
+    KEY `idx_post_id` (`post_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='帖子收藏表';
+
+-- 用户评估表
+CREATE TABLE `user_assessment` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '评估ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `questionnaire_id` BIGINT NOT NULL COMMENT '问卷ID',
+    `answers` JSON NOT NULL COMMENT '答案JSON',
+    `report` TEXT COMMENT '生成的评估报告',
+    PRIMARY KEY (`id`),
+    KEY `idx_user_id` (`user_id`),
+    KEY `idx_questionnaire_id` (`questionnaire_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户评估表';
+
+-- 问卷表
+CREATE TABLE `questionnaire` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '问卷ID',
+    `title` VARCHAR(255) NOT NULL COMMENT '问卷标题',
+    `description` TEXT COMMENT '问卷描述',
+    `questions` JSON NOT NULL COMMENT '问题JSON',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='问卷表';
+
+-- 密码重置码表
+CREATE TABLE `password_reset_code` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '重置码ID',
+    `email` VARCHAR(100) NOT NULL COMMENT '邮箱',
+    `code` VARCHAR(50) NOT NULL COMMENT '重置码',
+    `expire_time` DATETIME NOT NULL COMMENT '过期时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_email` (`email`),
+    KEY `idx_expire_time` (`expire_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='密码重置码表';
+
+-- 资源表
+CREATE TABLE `resource` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '资源ID',
+    `title` VARCHAR(255) NOT NULL COMMENT '资源标题',
+    `type` VARCHAR(50) NOT NULL COMMENT '资源类型',
+    `content_url` VARCHAR(255) NOT NULL COMMENT '内容URL',
+    `emotion_tag` VARCHAR(50) COMMENT '情绪标签',
+    `description` TEXT COMMENT '资源描述',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_type` (`type`),
+    KEY `idx_emotion_tag` (`emotion_tag`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='资源表';
+
+-- 添加外键约束
+ALTER TABLE `post` 
+ADD CONSTRAINT `fk_post_user` 
+FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) 
+ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `comment` 
+ADD CONSTRAINT `fk_comment_post` 
+FOREIGN KEY (`post_id`) REFERENCES `post` (`id`) 
+ON DELETE CASCADE ON UPDATE CASCADE,
+ADD CONSTRAINT `fk_comment_user` 
+FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) 
+ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `post_like` 
+ADD CONSTRAINT `fk_post_like_post` 
+FOREIGN KEY (`post_id`) REFERENCES `post` (`id`) 
+ON DELETE CASCADE ON UPDATE CASCADE,
+ADD CONSTRAINT `fk_post_like_user` 
+FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) 
+ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `post_favorite` 
+ADD CONSTRAINT `fk_post_favorite_post` 
+FOREIGN KEY (`post_id`) REFERENCES `post` (`id`) 
+ON DELETE CASCADE ON UPDATE CASCADE,
+ADD CONSTRAINT `fk_post_favorite_user` 
+FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) 
+ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `emotion_record` 
+ADD CONSTRAINT `fk_emotion_record_user` 
+FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) 
+ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `ai_conversation` 
+ADD CONSTRAINT `fk_ai_conversation_user` 
+FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) 
+ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE `user_assessment` 
+ADD CONSTRAINT `fk_user_assessment_user` 
+FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) 
+ON DELETE CASCADE ON UPDATE CASCADE,
+ADD CONSTRAINT `fk_user_assessment_questionnaire` 
+FOREIGN KEY (`questionnaire_id`) REFERENCES `questionnaire` (`id`) 
+ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE emotion_record MODIFY confidence DECIMAL(10,4) NULL COMMENT '分数';
