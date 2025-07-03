@@ -23,4 +23,7 @@ public class TextResource {
     private LocalDateTime createTime;
     @TableField("update_time")
     private LocalDateTime updateTime;
+
+    @TableField("emotion_tag") // 添加情绪标签字段
+    private String emotionTag;
 }
