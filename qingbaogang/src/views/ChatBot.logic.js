@@ -1,5 +1,6 @@
 import { ref, nextTick } from 'vue';
 import MarkdownIt from 'markdown-it';
+import request from '@/utils/request';
 
 const md = new MarkdownIt();
 
@@ -9,14 +10,17 @@ export const currentSessionId = ref('');
 export const messages = ref([]);
 export const input = ref('');
 
+const isAssessing = ref(false);
+export const questionnaire = ref([]);
+export const answers = ref([]);
+export const currentQuestionIndex = ref(0);
+
 export async function fetchSessionList() {
   const res = await fetch(`/api/ai/sessions?userId=${userId.value}`);
   const data = await res.json();
   if (data.code === 200) {
-    // 获取每个会话的第一条消息
     const sessions = await Promise.all(
       data.data.map(async (sid) => {
-        // 获取该会话的历史
         const res2 = await fetch(`/api/ai/history?userId=${userId.value}&sessionId=${sid}`);
         const data2 = await res2.json();
         let title = sid.slice(0, 8) + '...';
@@ -67,6 +71,25 @@ export async function fetchHistory(sessionId) {
 }
 
 export async function sendMsg() {
+  if (isAssessing.value) {
+    answers.value.push(input.value);
+    if (currentQuestionIndex.value < questionnaire.value.length - 1) {
+      currentQuestionIndex.value++;
+      messages.value.push({ role: 'ai', content: questionnaire.value[currentQuestionIndex.value].text });
+    } else {
+      await request.post('/api/emotion-record/record', {
+        userId: userId.value,
+        answers: answers.value,
+        score: null,
+        result: '感谢你的作答，评估已完成！'
+      });
+      messages.value.push({ role: 'ai', content: '感谢你的作答，评估已完成！' });
+      isAssessing.value = false;
+    }
+    input.value = '';
+    scrollToBottom();
+    return;
+  }
   const text = input.value.trim();
   if (!text || !currentSessionId.value) return;
   messages.value.push({ role: 'user', content: text });
@@ -101,7 +124,6 @@ export function scrollToBottom() {
 }
 
 function formatAIContent(raw) {
-  // 提取情绪 JSON
   const match = raw.match(/🌡️\\s*(\\{.*?\\})/s) || raw.match(/🌡️\\s*({.*?})/s);
   let emotionHtml = '';
   let text = raw;
@@ -117,29 +139,44 @@ function formatAIContent(raw) {
         </div>
       `;
     } catch (e) {
-      // 解析失败，直接显示原始
       emotionHtml = `<div class="emotion-card">${match[0]}</div>`;
     }
     text = raw.replace(match[0], '').trim();
   }
-  // markdown-it 渲染正文
   return emotionHtml + md.render(text);
 }
 
 function extractAIContent(raw) {
-  // 如果是对象，直接取 content
   if (typeof raw === 'object' && raw.choices) {
     return raw.choices[0]?.message?.content || '';
   }
-  // 如果是字符串，尝试解析为 JSON
   try {
     const obj = typeof raw === 'string' ? JSON.parse(raw) : raw;
     if (obj && obj.choices) {
       return obj.choices[0]?.message?.content || '';
     }
   } catch (e) {
-    // 不是 JSON，直接返回原文
     return raw;
   }
   return raw;
+}
+
+export async function startEmotionAssessment() {
+  isAssessing.value = true;
+  answers.value = [];
+  currentQuestionIndex.value = 0;
+  try {
+    const res = await request.get('/api/questionnaire');
+    console.log('问卷接口返回：', res.data);
+    if (!Array.isArray(res.data) || res.data.length === 0) {
+      messages.value.push({ role: 'ai', content: '问卷数据格式错误，请联系管理员。' });
+      isAssessing.value = false;
+      return;
+    }
+    questionnaire.value = res.data;
+    messages.value.push({ role: 'ai', content: questionnaire.value[0].text });
+  } catch (e) {
+    messages.value.push({ role: 'ai', content: '问卷加载失败，请稍后重试。' });
+    isAssessing.value = false;
+  }
 }

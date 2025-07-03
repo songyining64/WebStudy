@@ -17,8 +17,22 @@ public class QuestionnaireController {
     private QuestionnaireConfig questionnaireConfig;
 
     @GetMapping
-    public List<QuestionnaireConfig.Question> getQuestionnaire() {
-        return questionnaireConfig.getQuestions();
+    public List<Map<String, Object>> getQuestionnaire() {
+        List<QuestionnaireConfig.Question> questions = questionnaireConfig.getQuestions();
+        System.out.println("[QuestionnaireController] 问卷数据: " + (questions == null ? "null" : questions.toString()));
+        if (questions == null) {
+            return java.util.Collections.emptyList();
+        }
+        List<Map<String, Object>> result = new java.util.ArrayList<>();
+        for (QuestionnaireConfig.Question q : questions) {
+            Map<String, Object> map = new java.util.HashMap<>();
+            map.put("id", q.getId());
+            map.put("text", q.getText());
+            map.put("type", q.getType());
+            map.put("options", q.getOptions());
+            result.add(map);
+        }
+        return result;
     }
 
     @PostMapping("/evaluate")

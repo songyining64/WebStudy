@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.*;
 
@@ -38,7 +40,21 @@ public class DeepSeekClient {
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
         ResponseEntity<String> response = restTemplate.postForEntity(apiUrl, request, String.class);
 
-        return response.getBody();
+        // 解析AI返回的JSON，提取content
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(response.getBody());
+            JsonNode choices = root.get("choices");
+            if (choices != null && choices.isArray() && choices.size() > 0) {
+                JsonNode message = choices.get(0).get("message");
+                if (message != null && message.has("content")) {
+                    return message.get("content").asText();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "AI分析失败";
     }
 
     /**

@@ -96,6 +96,16 @@ const routes = [
         }
     },
     {
+        path: '/emotion-assessment',
+        name: 'EmotionAssessment',
+        component: () => import('@/views/EmotionAssessment.vue')
+    },
+    {
+        path: '/emotion-assessment-history',
+        name: 'EmotionAssessmentHistory',
+        component: () => import('@/views/EmotionAssessmentHistory.vue')
+    },
+    {
         path: '/:pathMatch(.*)*',
         component: () => import('@/views/404.vue')
     }
