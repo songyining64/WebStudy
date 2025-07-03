@@ -24,7 +24,9 @@ public interface PostMapper extends BaseMapper<Post> {
      * @param page 分页参数
      * @return 包含用户信息的帖子分页数据
      */
-    @Select("SELECT p.*, u.username, u.avatar FROM post p " +
+    @Select("SELECT p.id, p.user_id, p.title, p.content, p.images, p.tags, p.category, p.like_count, p.comment_count, "
+            +
+            "p.status, p.create_time, p.update_time, u.username, u.avatar FROM post p " +
             "LEFT JOIN user u ON p.user_id = u.id " +
             "ORDER BY p.create_time DESC")
     IPage<Post> selectPostsWithUserInfo(Page<Post> page);
@@ -35,7 +37,8 @@ public interface PostMapper extends BaseMapper<Post> {
      * @param postId 帖子ID
      * @return 带用户信息的帖子详情
      */
-    @Select("SELECT p.id, p.user_id, p.title, p.content, p.images, p.tags, p.like_count, p.comment_count, " +
+    @Select("SELECT p.id, p.user_id, p.title, p.content, p.images, p.tags, p.category, p.like_count, p.comment_count, "
+            +
             "p.status, p.create_time, p.update_time, u.username, u.avatar FROM post p " +
             "LEFT JOIN user u ON p.user_id = u.id " +
             "WHERE p.id = #{postId}")
@@ -48,7 +51,8 @@ public interface PostMapper extends BaseMapper<Post> {
      * @param keyword 搜索关键词
      * @return 符合条件的帖子分页数据
      */
-    @Select("SELECT p.id, p.user_id, p.title, p.content, p.images, p.tags, p.like_count, p.comment_count, " +
+    @Select("SELECT p.id, p.user_id, p.title, p.content, p.images, p.tags, p.category, p.like_count, p.comment_count, "
+            +
             "p.status, p.create_time, p.update_time, u.username, u.avatar FROM post p " +
             "LEFT JOIN user u ON p.user_id = u.id " +
             "WHERE p.title LIKE CONCAT('%', #{keyword}, '%') " +
@@ -64,7 +68,8 @@ public interface PostMapper extends BaseMapper<Post> {
      * @param category 分类名称
      * @return 符合条件的帖子分页数据
      */
-    @Select("SELECT p.id, p.user_id, p.title, p.content, p.images, p.tags, p.like_count, p.comment_count, " +
+    @Select("SELECT p.id, p.user_id, p.title, p.content, p.images, p.tags, p.category, p.like_count, p.comment_count, "
+            +
             "p.status, p.create_time, p.update_time, u.username, u.avatar FROM post p " +
             "LEFT JOIN user u ON p.user_id = u.id " +
             "WHERE p.category = #{category} " +
@@ -83,7 +88,7 @@ public interface PostMapper extends BaseMapper<Post> {
      */
     @Select({
             "<script>",
-            "SELECT p.id, p.user_id, p.title, p.content, p.images, p.tags, p.like_count, p.comment_count, ",
+            "SELECT p.id, p.user_id, p.title, p.content, p.images, p.tags, p.category, p.like_count, p.comment_count, ",
             "p.status, p.create_time, p.update_time, u.username, u.avatar FROM post p ",
             "LEFT JOIN user u ON p.user_id = u.id ",
             "WHERE 1=1 ",

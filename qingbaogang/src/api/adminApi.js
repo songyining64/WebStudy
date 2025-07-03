@@ -164,6 +164,17 @@ export const adminApi = {
      * @returns {Promise}
      */
     deletePost(id) {
-        return request.delete(`/api/admin/posts/${id}`)
+        const token = localStorage.getItem('authToken');
+        const userRole = localStorage.getItem('userRole');
+
+        return request.delete(`/api/admin/posts/${id}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'X-User-Role': userRole
+            }
+        }).catch(err => {
+            console.error('删除帖子API错误:', err);
+            return Promise.reject(err);
+        });
     }
 } 

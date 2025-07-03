@@ -8,6 +8,8 @@ import com.cupk.service.PostService;
 import com.cupk.service.CommentService;
 import com.cupk.service.EmotionRecordService;
 import com.cupk.service.UserAssessmentService;
+import com.cupk.service.PostLikeService;
+import com.cupk.service.PostFavoriteService;
 import com.cupk.service.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -38,6 +40,12 @@ public class AdminController {
 
     @Autowired
     private UserAssessmentService userAssessmentService;
+
+    @Autowired
+    private PostLikeService postLikeService;
+
+    @Autowired
+    private PostFavoriteService postFavoriteService;
 
     /**
      * 管理员身份验证
@@ -282,8 +290,43 @@ public class AdminController {
             return Result.error("无管理员权限");
         }
 
-        boolean success = postService.removeById(id);
-        return success ? Result.success() : Result.error("删除失败，帖子可能不存在");
+        try {
+            System.out.println("开始删除帖子: ID = " + id);
+
+            // 1. 先删除帖子的点赞记录
+            boolean likeDeleted = postLikeService.deleteByPostId(id);
+            System.out.println("删除帖子点赞记录结果: " + likeDeleted + ", postId = " + id);
+
+            // 2. 删除帖子的收藏记录
+            try {
+                postFavoriteService.deleteByPostId(id);
+                System.out.println("删除帖子收藏记录成功: postId = " + id);
+            } catch (Exception e) {
+                System.err.println("删除收藏记录异常，继续执行: " + e.getMessage());
+            }
+
+            // 3. 删除帖子的所有评论及评论点赞
+            commentService.deleteByPostId(id);
+            System.out.println("删除帖子关联的评论成功: postId = " + id);
+
+            // 4. 最后删除帖子本身
+            boolean success = postService.removeById(id);
+            System.out.println("删除帖子结果: " + success + ", postId = " + id);
+
+            return success ? Result.success() : Result.error("删除失败，帖子可能不存在");
+        } catch (Exception e) {
+            // 详细记录异常信息
+            System.err.println("删除帖子时发生异常: " + e.getMessage());
+            e.printStackTrace();
+
+            // 检查是否是外键约束异常
+            if (e.toString().contains("SQLIntegrityConstraintViolationException") ||
+                    e.toString().contains("foreign key constraint")) {
+                return Result.error("删除失败: 该帖子有关联数据，请先删除关联数据");
+            }
+
+            return Result.error("删除失败: " + e.getMessage());
+        }
     }
 
     /**

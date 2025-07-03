@@ -35,4 +35,12 @@ public interface PostFavoriteService {
      * @return 收藏数
      */
     long getFavoriteCount(Long postId);
+
+    /**
+     * 删除帖子的所有收藏记录
+     *
+     * @param postId 帖子ID
+     * @return 是否成功
+     */
+    boolean deleteByPostId(Long postId);
 }

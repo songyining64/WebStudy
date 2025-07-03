@@ -1,9 +1,15 @@
 <script setup lang="ts">
 import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
+import { ref, computed } from 'vue'
+import { request } from '@/utils/request'
 
 const userStore = useUserStore()
 const router = useRouter()
+
+const selectedFile = ref(null)
+const uploadedImageUrl = ref('')
+const debugInfo = ref({})
 
 const testAdminAccess = () => {
   if (userStore.isAdmin) {
@@ -37,6 +43,80 @@ const clearUserData = () => {
 
 const getLocalStorage = (key) => {
   return localStorage.getItem(key) || '无'
+}
+
+// 计算修正后的URL
+const fixedImageUrl = computed(() => {
+  if (!uploadedImageUrl.value) return ''
+  
+  // 如果URL不是以http开头，添加基础URL
+  if (!uploadedImageUrl.value.startsWith('http')) {
+    const baseUrl = window.location.origin
+    return baseUrl + (uploadedImageUrl.value.startsWith('/') ? '' : '/') + uploadedImageUrl.value
+  }
+  
+  return uploadedImageUrl.value
+})
+
+// 处理文件选择
+const handleFileUpload = (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+  
+  selectedFile.value = file
+  debugInfo.value = {
+    ...debugInfo.value,
+    selectedFile: {
+      name: file.name,
+      type: file.type,
+      size: file.size + ' bytes'
+    }
+  }
+}
+
+// 上传图片
+const uploadImage = async () => {
+  if (!selectedFile.value) return
+  
+  try {
+    debugInfo.value = {
+      ...debugInfo.value,
+      uploadStarted: new Date().toISOString()
+    }
+    
+    // 调用上传API
+    const response = await request.upload('/api/upload/image', selectedFile.value)
+    
+    debugInfo.value = {
+      ...debugInfo.value,
+      uploadResponse: response,
+      uploadCompleted: new Date().toISOString()
+    }
+    
+    // 获取上传的图片URL
+    uploadedImageUrl.value = response.data?.url || ''
+    
+    // 添加到调试信息
+    debugInfo.value = {
+      ...debugInfo.value,
+      imageUrl: uploadedImageUrl.value,
+      fixedImageUrl: fixedImageUrl.value
+    }
+  } catch (error) {
+    console.error('图片上传失败:', error)
+    debugInfo.value = {
+      ...debugInfo.value,
+      uploadError: error.message || '上传失败'
+    }
+    alert('图片上传失败: ' + (error.message || '未知错误'))
+  }
+}
+
+// 复制URL到剪贴板
+const copyUrl = () => {
+  navigator.clipboard.writeText(uploadedImageUrl.value)
+    .then(() => alert('URL已复制到剪贴板'))
+    .catch(err => console.error('复制失败:', err))
 }
 </script>
 
@@ -91,6 +171,39 @@ const getLocalStorage = (key) => {
         <p><strong>userRole:</strong> {{ getLocalStorage('userRole') }}</p>
         <p><strong>isAdmin:</strong> {{ getLocalStorage('isAdmin') }}</p>
       </div>
+    </div>
+
+    <div class="upload-section">
+      <h2>1. 选择图片上传</h2>
+      <input type="file" accept="image/*" @change="handleFileUpload" />
+      <button @click="uploadImage" :disabled="!selectedFile">上传图片</button>
+    </div>
+
+    <div class="result-section" v-if="uploadedImageUrl">
+      <h2>2. 上传结果</h2>
+      <div>
+        <p>图片URL: <code>{{ uploadedImageUrl }}</code></p>
+        <button @click="copyUrl">复制URL</button>
+      </div>
+    </div>
+
+    <div class="display-section" v-if="uploadedImageUrl">
+      <h2>3. 图片显示测试</h2>
+      <div>
+        <h3>直接使用URL</h3>
+        <img :src="uploadedImageUrl" alt="上传的图片" class="test-image" />
+      </div>
+      
+      <div v-if="uploadedImageUrl">
+        <h3>修正后的URL (如果需要)</h3>
+        <p>修正URL: <code>{{ fixedImageUrl }}</code></p>
+        <img :src="fixedImageUrl" alt="修正URL的图片" class="test-image" />
+      </div>
+    </div>
+    
+    <div class="debug-section">
+      <h2>4. 调试信息</h2>
+      <pre>{{ debugInfo }}</pre>
     </div>
   </div>
 </template>
@@ -187,6 +300,54 @@ const getLocalStorage = (key) => {
   padding: 5px 10px;
   border-radius: 4px;
   border-left: 3px solid #3498db;
+}
+
+.upload-section, .result-section, .display-section, .debug-section {
+  margin-bottom: 30px;
+  padding: 20px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background-color: #fff;
+}
+
+button {
+  margin: 10px 0;
+  padding: 8px 16px;
+  background-color: #1890ff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.test-image {
+  max-width: 100%;
+  max-height: 300px;
+  border: 1px solid #eee;
+  margin-top: 10px;
+}
+
+code {
+  display: block;
+  padding: 8px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  word-break: break-all;
+  margin: 10px 0;
+}
+
+pre {
+  background-color: #f5f5f5;
+  padding: 10px;
+  border-radius: 4px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 @media (max-width: 600px) {

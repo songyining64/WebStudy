@@ -35,4 +35,12 @@ public interface PostLikeService {
      * @return 点赞数
      */
     Long getLikeCount(Long postId);
+
+    /**
+     * 删除帖子所有点赞记录
+     *
+     * @param postId 帖子ID
+     * @return 是否删除成功
+     */
+    boolean deleteByPostId(Long postId);
 }

@@ -140,8 +140,8 @@
             <el-table-column label="作者" width="150">
               <template #default="scope">
                 <div class="post-author">
-                  <el-avatar :src="scope.row.user?.avatar || defaultAvatar" :size="32"></el-avatar>
-                  <span>{{ scope.row.user?.username || '未知用户' }}</span>
+                  <el-avatar :src="scope.row.avatar || defaultAvatar" :size="32"></el-avatar>
+                  <span>{{ scope.row.username || '未知用户' }}</span>
                 </div>
               </template>
             </el-table-column>
@@ -480,13 +480,39 @@ const deletePost = (post) => {
   )
     .then(async () => {
       try {
-        await adminApi.deletePost(post.id);
-        ElMessage.success('帖子已删除');
-        fetchPosts(); // 刷新帖子列表
-        fetchStats(); // 刷新统计数据
+        console.log('正在删除帖子ID:', post.id);
+        const res = await adminApi.deletePost(post.id);
+        console.log('删除帖子响应:', res);
+        
+        // 判断响应是否表示成功（兼容不同格式的响应）
+        if (res.success === true || res.code === 200 || res.code === 0) {
+          ElMessage.success('帖子已删除');
+          fetchPosts(); // 刷新帖子列表
+          fetchStats(); // 刷新统计数据
+        } else {
+          // 尽管显示错误，但仍然刷新列表，以防后端删除成功但响应格式不符合预期
+          ElMessage({
+            message: '删除操作可能已成功，正在刷新数据...',
+            type: 'warning'
+          });
+          setTimeout(() => {
+            fetchPosts(); // 刷新帖子列表
+            fetchStats(); // 刷新统计数据
+          }, 1000);
+          
+          // 如果确实有错误信息，再抛出
+          if (res.msg || res.message) {
+            throw new Error(res.msg || res.message);
+          }
+        }
       } catch (error) {
         console.error('删除帖子失败', error);
         ElMessage.error('删除失败: ' + (error.message || '未知错误'));
+        
+        // 尝试刷新列表，确认是否删除成功
+        setTimeout(() => {
+          fetchPosts();
+        }, 1500);
       }
     })
     .catch(() => {

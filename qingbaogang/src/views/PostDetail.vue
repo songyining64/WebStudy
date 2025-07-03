@@ -11,6 +11,21 @@
                     </div>
                 </div>
                 <div class="post-content">{{ post.content }}</div>
+                
+                <!-- 帖子图片展示 -->
+                <div v-if="post.images" class="post-images">
+                    <div class="images-grid" :class="getImagesGridClass(post.images)">
+                        <div 
+                            v-for="(image, index) in getImagesArray(post.images)" 
+                            :key="index" 
+                            class="image-item"
+                            @click="showFullImage(image)"
+                        >
+                            <img :src="image" :alt="`帖子图片${index + 1}`" class="post-image" @error="handleImageError($event, index)" />
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="post-tags" v-if="post.tags">
                     <span v-for="tag in post.tags.split(',')" :key="tag" class="tag">
                         #{{ tag.trim() }}
@@ -47,6 +62,14 @@
         <div class="back-button" @click="goBack">
             <i class="icon-back">←</i> 返回社区
         </div>
+        
+        <!-- 图片查看弹窗 -->
+        <div v-if="showImageViewer" class="image-viewer-overlay" @click="closeImageViewer">
+            <div class="image-viewer-content" @click.stop>
+                <img :src="currentViewingImage" alt="图片查看" />
+                <button @click="closeImageViewer" class="close-btn">关闭</button>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -75,6 +98,9 @@ const post = ref(null)
 const liked = ref(false)
 const likeCount = ref(0)
 const favorited = ref(false)
+// 图片查看相关
+const currentViewingImage = ref('')
+const showImageViewer = ref(false)
 
 // 获取帖子详情
 const fetchPostDetail = async () => {
@@ -252,27 +278,115 @@ const toggleFavorite = async () => {
     }
 }
 
-// 格式化日期
-const formatDate = (dateString) => {
-    if (!dateString) return ''
-    const date = new Date(dateString)
-    return date.toLocaleDateString('zh-CN', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    })
-}
-
-// 返回社区
+// 返回上一页
 const goBack = () => {
-    router.push('/community')
+    router.back()
 }
 
 // 滚动到评论区
 const scrollToComments = () => {
     document.getElementById('comments').scrollIntoView({ behavior: 'smooth' })
+}
+
+// 格式化日期
+const formatDate = (dateString) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    return date.toLocaleDateString('zh-CN')
+}
+
+// 辅助函数：将字符串转换为数组并确保URL完整
+const getImagesArray = (images) => {
+    if (!images) return []
+    
+    console.log('帖子详情页处理图片数据:', images, '类型:', typeof images)
+    
+    if (typeof images === 'string') {
+        // 过滤掉空字符串
+        const imagesArray = images.split(',').filter(img => img.trim() !== '')
+        console.log('帖子详情页解析后的图片数组:', imagesArray)
+        
+        // 处理每个URL，确保路径正确
+        return imagesArray.map((url, index) => {
+            console.log(`帖子详情页处理图片[${index}]的URL: ${url}`)
+            
+            // 如果已经是完整URL，直接返回
+            if (url.startsWith('http')) {
+                return url
+            }
+            
+            // 提取文件名
+            const parts = url.split('/')
+            const filename = parts[parts.length - 1]
+            console.log(`帖子详情页提取的文件名: ${filename}`)
+            
+            // 使用正确的路径格式 - 添加应用上下文路径
+            return `/mental/upload/${filename}`
+        })
+    } else if (Array.isArray(images)) {
+        console.log('帖子详情页已是数组格式的图片:', images)
+        return images
+    }
+    
+    console.warn('帖子详情页无法处理的图片格式:', images)
+    return []
+}
+
+// 添加图片加载错误处理函数
+const handleImageError = (event, index) => {
+    console.error(`帖子详情页图片加载失败, 索引: ${index}`)
+    
+    if (!post.value || !post.value.images) return
+    
+    // 尝试其他URL格式
+    const imagesArray = getImagesArray(post.value.images)
+    const url = imagesArray[index]
+    
+    if (url) {
+        const parts = url.split('/')
+        const filename = parts[parts.length - 1]
+        
+        // 尝试其他URL格式
+        const alternativeUrls = [
+            `/mental/upload/${filename}`,
+            `/upload/${filename}`,
+            `http://localhost:8080/mental/upload/${filename}`,
+            `http://localhost:8080/upload/${filename}`
+        ]
+        
+        // 找到当前URL在替代URL列表中的位置
+        const currentIndex = alternativeUrls.findIndex(alt => alt === url)
+        
+        // 如果有下一个替代URL，尝试使用它
+        if (currentIndex < alternativeUrls.length - 1) {
+            console.log(`尝试替代URL: ${alternativeUrls[currentIndex + 1]}`)
+            event.target.src = alternativeUrls[currentIndex + 1]
+        } else {
+            // 所有URL都尝试过了，显示默认图片
+            event.target.src = '/src/assets/default-avatar.png'
+            event.target.alt = '图片加载失败'
+        }
+    }
+}
+
+// 根据图片数量获取网格类名
+const getImagesGridClass = (images) => {
+    const imagesArray = getImagesArray(images)
+    const count = imagesArray.length
+    console.log('图片网格类计算，图片数量:', count)
+    if (count === 0) return ''
+    return `grid-${Math.min(count, 4)}`
+}
+
+// 显示图片查看弹窗
+const showFullImage = (imageUrl) => {
+    currentViewingImage.value = imageUrl
+    showImageViewer.value = true
+}
+
+// 关闭图片查看弹窗
+const closeImageViewer = () => {
+    showImageViewer.value = false
 }
 
 // 初始化
@@ -373,9 +487,6 @@ onMounted(() => {
 .section-title {
     margin-bottom: 20px;
     color: #333;
-    font-size: 18px;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
 }
 
 .loading-state {
@@ -423,5 +534,86 @@ onMounted(() => {
         padding: 8px 12px;
         font-size: 14px;
     }
+}
+
+/* 图片展示样式 */
+.post-images {
+    margin: 20px 0;
+}
+
+.images-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.images-grid.grid-1 .image-item {
+    width: 100%;
+    max-width: 500px;
+    height: auto;
+    max-height: 400px;
+}
+
+.images-grid.grid-2 .image-item {
+    width: calc(50% - 5px);
+    height: 250px;
+}
+
+.images-grid.grid-3 .image-item, 
+.images-grid.grid-4 .image-item {
+    width: calc(50% - 5px);
+    height: 200px;
+}
+
+.image-item {
+    position: relative;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.image-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 图片查看弹窗 */
+.image-viewer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.image-viewer-content {
+    position: relative;
+    max-width: 90%;
+    max-height: 90%;
+}
+
+.image-viewer-content img {
+    max-width: 100%;
+    max-height: 90vh;
+    object-fit: contain;
+}
+
+.image-viewer-content .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: rgba(0,0,0,0.5);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    cursor: pointer;
 }
 </style>
