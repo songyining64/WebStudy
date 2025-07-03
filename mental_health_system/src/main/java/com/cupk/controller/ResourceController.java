@@ -9,16 +9,27 @@ import com.cupk.service.UserAssessmentService;
 import com.cupk.service.Result;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
-
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.ArrayList;
-import jakarta.servlet.http.HttpServletRequest;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/resource")
@@ -32,32 +43,30 @@ public class ResourceController {
 
     @Autowired
     private UserAssessmentService userAssessmentService;
+
+    @Value("${upload.dir:src/main/resources/static/upload/}")
+    private String uploadDir;
+
     // 推荐资源接口
 
     @GetMapping("/recommend")
-        // 1. 获取用户的最新评估结果
     public Result<?> recommendResources(@RequestParam Long userId) {
         UserAssessment latestAssessment = userAssessmentService.getLatestAssessment(userId);
 
         List<VideoResource> videoResources = new ArrayList<>();
         List<TextResource> textResources = new ArrayList<>();
 
-            // 2. 根据评估结果推荐资源
         if (latestAssessment != null) {
             String emotionTag = extractEmotionTagFromAssessment(latestAssessment.getReport());
             videoResources = videoResourceService.list(new QueryWrapper<VideoResource>().eq("emotion_tag", emotionTag));
             textResources = textResourceService.list(new QueryWrapper<TextResource>().eq("emotion_tag", emotionTag));
-            // 3. 使用默认资源
-            // 从数据库获取默认资源，emotion_tag 为 "default"
         } else {
             videoResources = videoResourceService.list(new QueryWrapper<VideoResource>().eq("emotion_tag", "default"));
             textResources = textResourceService.list(new QueryWrapper<TextResource>().eq("emotion_tag", "default"));
         }
-        // 4. 返回结果
 
         return Result.success(new ResourceRecommendation(videoResources, textResources));
     }
-    // 内部类，用于封装推荐结果
 
     private static class ResourceRecommendation {
         private List<VideoResource> videos;
@@ -76,7 +85,7 @@ public class ResourceController {
             return texts;
         }
     }
-    // 工具方法：从评估报告中提取情绪标签 (需要实现)
+
     private String extractEmotionTagFromAssessment(String report) {
         if (report == null || report.isEmpty()) {
             return "default";
@@ -86,109 +95,153 @@ public class ResourceController {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(report);
 
-            // 提取 risk_level 字段
             JsonNode riskLevelNode = root.get("risk_level");
             if (riskLevelNode != null && riskLevelNode.isTextual()) {
                 String riskLevel = riskLevelNode.asText();
-                // 根据 risk_level 返回不同的情绪标签
                 switch (riskLevel) {
-                    case "绿色": // 低危机
+                    case "绿色":
                         return "low_risk";
-                    case "黄色": // 中危机
+                    case "黄色":
                         return "medium_risk";
-                    case "红色": // 高危机
+                    case "红色":
                         return "high_risk";
                     default:
-            return "default"; // 默认标签
-        }
+                        return "default";
+                }
             } else {
-                return "default"; // risk_level 字段不存在或类型不正确
-    }
+                return "default";
+            }
 
         } catch (IOException e) {
             e.printStackTrace();
-            return "default"; // 解析 JSON 失败，返回默认标签
+            return "default";
         }
     }
+
     // ========================= 管理接口 =========================
 
-    // 获取所有视频资源（管理员权限）
-
     @GetMapping("/videos")
-    public Result<List<VideoResource>> listVideos(HttpServletRequest request) {
-        if (!isAdmin(request))
-            return Result.error("无权限");
+    public Result<List<VideoResource>> listVideos() {
         return Result.success(videoResourceService.list());
     }
-    // 添加视频资源（管理员权限）
 
     @PostMapping("/videos")
-    public Result<?> addVideo(@RequestBody VideoResource videoResource, HttpServletRequest request) {
-        if (!isAdmin(request))
-            return Result.error("无权限");
+    public Result<?> addVideo(@RequestBody VideoResource videoResource) {
         videoResource.setUploadTime(LocalDateTime.now());
         videoResourceService.save(videoResource);
         return Result.success();
     }
-    // 删除视频资源（管理员权限）
 
     @DeleteMapping("/videos/{id}")
-    public Result<?> deleteVideo(@PathVariable Long id, HttpServletRequest request) {
-         if (!isAdmin(request))
-             return Result.error("无权限");
+    public Result<?> deleteVideo(@PathVariable Long id) {
         boolean success = videoResourceService.removeById(id);
         return success ? Result.success() : Result.error("删除失败");
     }
-    // 更新视频资源（管理员权限）
 
     @PutMapping("/videos")
-    public Result<?> updateVideo(@RequestBody VideoResource videoResource, HttpServletRequest request) {
-         if (!isAdmin(request))
-             return Result.error("无权限");
+    public Result<?> updateVideo(@RequestBody VideoResource videoResource) {
         boolean success = videoResourceService.updateById(videoResource);
         return success ? Result.success() : Result.error("更新失败");
     }
-    // 获取所有文案资源（管理员权限）
 
     @GetMapping("/texts")
-    public Result<List<TextResource>> listTexts(HttpServletRequest request) {
-        if (!isAdmin(request))
-            return Result.error("无权限");
+    public Result<List<TextResource>> listTexts() {
         return Result.success(textResourceService.list());
     }
-    // 添加文案资源（管理员权限）
 
     @PostMapping("/texts")
-    public Result<?> addText(@RequestBody TextResource textResource, HttpServletRequest request) {
-        if (!isAdmin(request))
-            return Result.error("无权限");
+    public Result<?> addText(@RequestBody TextResource textResource) {
         textResource.setCreateTime(LocalDateTime.now());
         textResourceService.save(textResource);
         return Result.success();
-}
-    // 删除文案资源（管理员权限）
+    }
 
     @DeleteMapping("/texts/{id}")
-    public Result<?> deleteText(@PathVariable Long id, HttpServletRequest request) {
-        if (!isAdmin(request))
-            return Result.error("无权限");
+    public Result<?> deleteText(@PathVariable Long id) {
         boolean success = textResourceService.removeById(id);
         return success ? Result.success() : Result.error("删除失败");
     }
-    // 更新文案资源（管理员权限）
 
     @PutMapping("/texts")
-    public Result<?> updateText(@RequestBody TextResource textResource, HttpServletRequest request) {
-        if (!isAdmin(request))
-            return Result.error("无权限");
+    public Result<?> updateText(@RequestBody TextResource textResource) {
         textResource.setUpdateTime(LocalDateTime.now());
         boolean success = textResourceService.updateById(textResource);
         return success ? Result.success() : Result.error("更新失败");
     }
-    // 工具方法：判断是否为管理员
 
-    private boolean isAdmin(HttpServletRequest request) {
-        String role = request.getHeader("X-User-Role");
-        return "admin".equals(role);
+    @GetMapping("/image-info/{filename:.+}")
+    public Result<?> getImageInfo(@PathVariable String filename) {
+        File uploadDirectory = new File(uploadDir);
+        File imageFile = new File(uploadDirectory, filename);
+
+        Map<String, Object> info = new HashMap<>();
+        info.put("filename", filename);
+        info.put("exists", imageFile.exists());
+        info.put("size", imageFile.exists() ? imageFile.length() : -1);
+        info.put("path", imageFile.getAbsolutePath());
+        info.put("canRead", imageFile.canRead());
+        info.put("lastModified", imageFile.exists() ? new java.util.Date(imageFile.lastModified()).toString() : null);
+
+        String[] possibleUrls = new String[] {
+                "/static/upload/" + filename,
+                "/mental/static/upload/" + filename,
+                "/upload/" + filename,
+                "/mental/upload/" + filename
+        };
+        info.put("possibleUrls", possibleUrls);
+        info.put("uploadDirSetting", uploadDir);
+        info.put("uploadDirExists", uploadDirectory.exists());
+
+        return Result.success(info);
+    }
+
+    @GetMapping("/direct-image/{filename:.+}")
+    public ResponseEntity<Resource> getImageDirect(@PathVariable String filename) throws IOException {
+        File uploadDirectory = new File(uploadDir);
+        Path imagePath = Paths.get(uploadDirectory.getAbsolutePath(), filename);
+
+        if (!Files.exists(imagePath)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Resource resource = new FileSystemResource(imagePath.toFile());
+        String contentType = Files.probeContentType(imagePath);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=\"" + imagePath.getFileName().toString() + "\"")
+                .body(resource);
+    }
+
+    @GetMapping("/list-uploads")
+    public Result<?> listUploadDirectory() {
+        File uploadDirectory = new File(uploadDir);
+        if (!uploadDirectory.exists() || !uploadDirectory.isDirectory()) {
+            return Result.error("上传目录不存在");
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("directory", uploadDirectory.getAbsolutePath());
+        result.put("exists", uploadDirectory.exists());
+
+        if (uploadDirectory.exists()) {
+            File[] files = uploadDirectory.listFiles();
+            String[] fileNames = new String[files != null ? files.length : 0];
+            Map<String, Long> fileSizes = new HashMap<>();
+
+            if (files != null) {
+                for (int i = 0; i < files.length; i++) {
+                    fileNames[i] = files[i].getName();
+                    fileSizes.put(files[i].getName(), files[i].length());
+                }
+            }
+
+            result.put("files", fileNames);
+            result.put("fileSizes", fileSizes);
+            result.put("fileCount", fileNames.length);
+        }
+
+        return Result.success(result);
     }
 }
