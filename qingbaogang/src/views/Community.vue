@@ -48,7 +48,7 @@
           </div>
         </div>
         <div class="post-content" @click="goToPostDetail(post.id)">
-          {{ post.content && post.content.length > 120 ? post.content.substring(0, 120) + '...' : post.content }}
+          {{ post.content ? (post.content.length > 120 ? post.content.substring(0, 120) + '...' : post.content) : '无内容' }}
         </div>
         <!-- 帖子图片展示 -->
         <div v-if="post.images" class="post-images">

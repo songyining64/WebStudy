@@ -47,6 +47,14 @@ public class Result<T> {
 
     /**
      * 操作失败，仅错误消息
+     * 此方法与error方法等同，为了兼容性添加
+     */
+    public static <T> Result<T> fail(String msg) {
+        return new Result<>(ResultCode.ERROR.getCode(), msg, null);
+    }
+
+    /**
+     * 操作失败，仅错误消息
      */
     public static <T> Result<T> error(String msg) {
         return new Result<>(ResultCode.ERROR.getCode(), msg, null);

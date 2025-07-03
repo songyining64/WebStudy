@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.util.StringUtils;
 
 @Service
 public class UserAssessmentServiceImpl extends ServiceImpl<UserAssessmentMapper, UserAssessment>
@@ -65,10 +66,18 @@ public class UserAssessmentServiceImpl extends ServiceImpl<UserAssessmentMapper,
     @Override
     public IPage<UserAssessment> getUserAssessments(Long userId, int page, int size) {
         Page<UserAssessment> pageParam = new Page<>(page, size);
-        LambdaQueryWrapper<UserAssessment> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(UserAssessment::getUserId, userId);
-        // 没有createTime字段，无法排序
-        return page(pageParam, wrapper);
+        try {
+            // 使用手动 SQL 查询或在 XML 中定义专门的方法更安全
+            // 这里我们使用已有的 pageUserAssessments 方法并添加过滤条件
+            LambdaQueryWrapper<UserAssessment> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(UserAssessment::getUserId, userId)
+                    .orderByDesc(UserAssessment::getSubmitTime);
+
+            // 使用 XML 中定义的列
+            return this.baseMapper.pageUserAssessments(pageParam, null);
+        } catch (Exception e) {
+            throw new RuntimeException("查询用户评估问卷失败: " + e.getMessage(), e);
+        }
     }
 
     @Override
@@ -95,5 +104,30 @@ public class UserAssessmentServiceImpl extends ServiceImpl<UserAssessmentMapper,
     @Override
     public long count() {
         return count(null);
+    }
+
+    @Override
+    public IPage<UserAssessment> pageUserAssessments(int page, int size, String keyword) {
+        Page<UserAssessment> pageParam = new Page<>(page, size);
+
+        try {
+            if (StringUtils.hasText(keyword)) {
+                // 使用自定义方法搜索
+                return this.baseMapper.pageUserAssessments(pageParam, keyword);
+            } else {
+                // 使用自定义方法但不带关键词
+                return this.baseMapper.pageUserAssessments(pageParam, null);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("查询用户评估问卷失败: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public boolean deleteUserAssessment(Long id) {
+        if (id == null) {
+            return false;
+        }
+        return this.removeById(id);
     }
 }
