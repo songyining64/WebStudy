@@ -163,4 +163,34 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
                 return false;
         }
     }
+
+    @Override
+    public IPage<Post> getPostsByUserId(Long userId, int page, int size) {
+        logger.info("获取用户帖子，用户ID: {}, 页码: {}, 每页数量: {}", userId, page, size);
+        
+        if (userId == null) {
+            throw new IllegalArgumentException("用户ID不能为空");
+        }
+        
+        // 创建分页参数
+        Page<Post> pageParams = new Page<>(page, size);
+        
+        // 调用Mapper中的方法查询用户发布的帖子
+        return postMapper.selectPostsByUserId(pageParams, userId);
+    }
+    
+    @Override
+    public IPage<Post> getFavoritePostsByUserId(Long userId, int page, int size) {
+        logger.info("获取用户收藏帖子，用户ID: {}, 页码: {}, 每页数量: {}", userId, page, size);
+        
+        if (userId == null) {
+            throw new IllegalArgumentException("用户ID不能为空");
+        }
+        
+        // 创建分页参数
+        Page<Post> pageParams = new Page<>(page, size);
+        
+        // 调用Mapper中的方法查询用户收藏的帖子
+        return postMapper.selectFavoritePostsByUserId(pageParams, userId);
+    }
 }

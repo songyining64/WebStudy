@@ -1,5 +1,8 @@
 package com.cupk.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.cupk.entity.Post;
+
 public interface PostLikeService {
     /**
      * 点赞帖子
@@ -35,4 +38,14 @@ public interface PostLikeService {
      * @return 点赞数
      */
     Long getLikeCount(Long postId);
+    
+    /**
+     * 获取用户点赞的帖子列表
+     * 
+     * @param userId 用户ID
+     * @param page 页码
+     * @param size 每页大小
+     * @return 用户点赞的帖子列表
+     */
+    IPage<Post> getLikedPostsByUserId(Long userId, int page, int size);
 }

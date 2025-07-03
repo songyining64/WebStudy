@@ -161,4 +161,25 @@ public class PostLikeServiceImpl implements PostLikeService {
             return 0L;
         }
     }
+
+    @Override
+    public com.baomidou.mybatisplus.core.metadata.IPage<Post> getLikedPostsByUserId(Long userId, int page, int size) {
+        logger.info("获取用户点赞的帖子列表，用户ID: {}, 页码: {}, 每页大小: {}", userId, page, size);
+        
+        try {
+            if (userId == null) {
+                throw new IllegalArgumentException("用户ID不能为空");
+            }
+            
+            // 创建分页参数
+            com.baomidou.mybatisplus.extension.plugins.pagination.Page<Post> pageParams = 
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size);
+            
+            // 调用Mapper查询用户点赞的帖子
+            return postLikeMapper.selectLikedPostsByUserId(pageParams, userId);
+        } catch (Exception e) {
+            logger.error("获取用户点赞的帖子列表时发生异常，用户ID: {}", userId, e);
+            throw e;
+        }
+    }
 }

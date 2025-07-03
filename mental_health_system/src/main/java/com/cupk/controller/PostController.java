@@ -185,6 +185,42 @@ public class PostController {
         return success ? Result.success() : Result.error("删除失败");
     }
 
+    // 13. 获取用户发布的帖子
+    @GetMapping("/user")
+    public Result<?> getUserPosts(
+            @RequestParam Long userId,
+            @RequestParam(value = "current", defaultValue = "1") int current,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
+        
+        logger.info("获取用户帖子请求: userId={}, current={}, size={}", userId, current, size);
+        
+        try {
+            IPage<Post> postPage = postService.getPostsByUserId(userId, current, size);
+            return Result.success(postPage);
+        } catch (Exception e) {
+            logger.error("获取用户帖子失败", e);
+            return Result.error("获取用户帖子失败: " + e.getMessage());
+        }
+    }
+
+    // 14. 获取用户收藏的帖子
+    @GetMapping("/favorites/user/{userId}")
+    public Result<?> getUserFavoritePosts(
+            @PathVariable Long userId,
+            @RequestParam(value = "current", defaultValue = "1") int current,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
+        
+        logger.info("获取用户收藏帖子请求: userId={}, current={}, size={}", userId, current, size);
+        
+        try {
+            IPage<Post> postPage = postService.getFavoritePostsByUserId(userId, current, size);
+            return Result.success(postPage);
+        } catch (Exception e) {
+            logger.error("获取用户收藏帖子失败", e);
+            return Result.error("获取用户收藏帖子失败: " + e.getMessage());
+        }
+    }
+
     // 工具方法：判断是否为管理员
     private boolean isAdmin(HttpServletRequest request) {
         String role = request.getHeader("X-User-Role");

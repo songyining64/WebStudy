@@ -123,19 +123,17 @@ export const getPostComments = (postId) => {
     return request.get(`/api/comments/post/${processedPostId}`);
 }
 
-export const deleteComment = (commentId, userId) => {
-    if (!commentId || !userId) {
-        console.error('删除评论失败：无效的参数', { commentId, userId });
-        return Promise.reject(new Error('无效的参数'));
+export const deleteComment = (commentId) => {
+    if (!commentId) {
+        console.error('删除评论失败：无效的评论ID');
+        return Promise.reject(new Error('无效的评论ID'));
     }
 
     const processedCommentId = typeof commentId === 'string' && commentId.length <= 10 ?
         parseInt(commentId, 10) : commentId.toString();
 
-    const numericUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
-
-    console.log(`删除评论，commentId=${processedCommentId}(${typeof processedCommentId}), userId=${numericUserId}`);
-    return request.delete(`/api/comments/${processedCommentId}/users/${numericUserId}`);
+    console.log(`删除评论，评论ID=${processedCommentId}(${typeof processedCommentId})`);
+    return request.delete(`/api/comments/${processedCommentId}`);
 }
 
 export const getCommentReplies = (commentId) => {
@@ -421,4 +419,64 @@ export const testPostApi = async (options) => {
             response: error.response?.data
         }
     }
+}
+
+// 获取用户发布的帖子
+export const getUserPosts = (userId, params = {}) => {
+    if (!userId) {
+        console.error('获取用户帖子失败：无效的用户ID');
+        return Promise.reject(new Error('无效的用户ID'));
+    }
+
+    const apiParams = {
+        userId: userId,
+        current: params.page || 1,
+        size: params.size || 10
+    };
+
+    console.log(`获取用户发布的帖子，用户ID=${userId}`);
+    return request.get('/api/post/user', { params: apiParams });
+}
+
+// 获取用户点赞的帖子
+export const getUserLikedPosts = (userId, params = {}) => {
+    if (!userId) {
+        console.error('获取用户点赞帖子失败：无效的用户ID');
+        return Promise.reject(new Error('无效的用户ID'));
+    }
+
+    const apiParams = {
+        current: params.page || 1,
+        size: params.size || 10
+    };
+
+    console.log(`获取用户点赞的帖子，用户ID=${userId}`);
+    return request.get(`/api/post-likes/users/${userId}/posts`, { params: apiParams });
+}
+
+// 获取用户收藏的帖子
+export const getUserFavoritePosts = (userId, params = {}) => {
+    if (!userId) {
+        console.error('获取用户收藏帖子失败：无效的用户ID');
+        return Promise.reject(new Error('无效的用户ID'));
+    }
+
+    const apiParams = {
+        current: params.page || 1,
+        size: params.size || 10
+    };
+
+    console.log(`获取用户收藏的帖子，用户ID=${userId}`);
+    return request.get(`/api/post/favorites/user/${userId}`, { params: apiParams });
+}
+
+// 添加评论
+export const addComment = (data) => {
+    if (!data.postId || !data.content) {
+        console.error('添加评论失败：无效的参数', data);
+        return Promise.reject(new Error('无效的参数'));
+    }
+
+    console.log(`发送添加评论请求：`, data);
+    return request.post('/api/comments', data);
 } 
