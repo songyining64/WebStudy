@@ -47,4 +47,6 @@ public interface PostLikeService {
      * @return 是否删除成功
      */
     boolean deleteByPostId(Long postId);
+
+    Long getLikeCount(Long postId);
 }
