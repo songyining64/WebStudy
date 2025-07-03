@@ -124,4 +124,28 @@ public class PostLikeController {
             return Result.error("获取点赞数量失败，请稍后重试");
         }
     }
+
+    /**
+     * 获取用户点赞的帖子列表
+     *
+     * @param userId 用户ID
+     * @param current 当前页码
+     * @param size 每页大小
+     * @return 用户点赞的帖子列表
+     */
+    @GetMapping("/users/{userId}/posts")
+    public Result<?> getUserLikedPosts(
+            @PathVariable Long userId,
+            @RequestParam(value = "current", defaultValue = "1") int current,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
+        
+        logger.info("获取用户点赞帖子列表请求: userId={}, current={}, size={}", userId, current, size);
+        
+        try {
+            return Result.success(postLikeService.getLikedPostsByUserId(userId, current, size));
+        } catch (Exception e) {
+            logger.error("获取用户点赞帖子列表失败", e);
+            return Result.error("获取用户点赞帖子列表失败: " + e.getMessage());
+        }
+    }
 }
