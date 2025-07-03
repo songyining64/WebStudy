@@ -16,7 +16,7 @@ export default defineConfig({
     server: {
         proxy: {
             '/api': {
-                target: 'http://localhost:8080/mental', // ע��������� /mental
+                target: 'http://localhost:8080/mental', // 注意这里是/mental
                 changeOrigin: true,
                 rewrite: path => path.replace(/^\/api/, '/api')
             }
