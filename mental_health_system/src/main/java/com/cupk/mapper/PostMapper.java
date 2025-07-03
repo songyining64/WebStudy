@@ -13,10 +13,10 @@ import org.apache.ibatis.annotations.Update;
 public interface PostMapper extends BaseMapper<Post> {
     // 可扩展自定义SQL
     @Update("UPDATE post SET like_count = like_count + 1 WHERE id = #{postId}")
-    void incrementLikeCount(@Param("postId") Long postId);
+    void increaseLikeCount(@Param("postId") Long postId);
 
     @Update("UPDATE post SET like_count = like_count - 1 WHERE id = #{postId} AND like_count > 0")
-    void decrementLikeCount(@Param("postId") Long postId);
+    void decreaseLikeCount(@Param("postId") Long postId);
 
     /**
      * 分页查询帖子列表，并关联用户信息
@@ -126,7 +126,7 @@ public interface PostMapper extends BaseMapper<Post> {
             "WHERE p.user_id = #{userId} " +
             "ORDER BY p.create_time DESC")
     IPage<Post> selectPostsByUserId(Page<Post> page, @Param("userId") Long userId);
-    
+
     /**
      * 获取用户收藏的帖子
      * 

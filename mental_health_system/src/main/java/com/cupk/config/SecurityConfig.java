@@ -5,7 +5,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
-import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
@@ -13,8 +12,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 @Configuration
 @EnableWebSecurity
@@ -33,16 +30,8 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        // 创建一个明文密码编码器
-        Map<String, PasswordEncoder> encoders = new HashMap<>();
-        encoders.put("noop", org.springframework.security.crypto.password.NoOpPasswordEncoder.getInstance());
-
-        // 使用noop作为默认编码器
-        DelegatingPasswordEncoder delegatingPasswordEncoder = new DelegatingPasswordEncoder("noop", encoders);
-        delegatingPasswordEncoder.setDefaultPasswordEncoderForMatches(
-                org.springframework.security.crypto.password.NoOpPasswordEncoder.getInstance());
-
-        return delegatingPasswordEncoder;
+        // 推荐用法：委托工厂，支持多种加密方式
+        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
 
     @Bean
