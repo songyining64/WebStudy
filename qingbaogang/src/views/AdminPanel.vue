@@ -1257,14 +1257,14 @@ onMounted(async () => {
       }
     } else {
       // 生产环境中进行完整验证
-      if (isAdmin !== 'true' || userRole !== 'admin') {
-        throw new Error('本地存储中没有管理员权限标识');
-      }
-      
-      // 再次确认服务器上的管理员权限
+    if (isAdmin !== 'true' || userRole !== 'admin') {
+      throw new Error('本地存储中没有管理员权限标识');
+    }
+    
+    // 再次确认服务器上的管理员权限
       try {
-        await adminApi.verifyAdmin();
-        console.log('服务器验证管理员权限成功');
+    await adminApi.verifyAdmin();
+    console.log('服务器验证管理员权限成功');
       } catch (error) {
         console.warn('服务器验证失败，使用本地权限判断');
       }
