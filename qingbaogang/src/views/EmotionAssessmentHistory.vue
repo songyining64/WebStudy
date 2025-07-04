@@ -7,8 +7,8 @@
       <div><b>情绪类型：</b>{{ rec.emotion || '未知' }}</div>
       <div v-if="rec.remark"><b>备注：</b>{{ rec.remark }}</div>
       <div v-if="rec.content"><b>问卷答案：</b>{{ rec.content }}</div>
-      <div v-if="rec.suggestions"><b>AI评估报告：</b>
-        <div class="ai-report" v-html="rec.suggestions"></div>
+      <div v-if="rec.analysisReport"><b>AI评估报告：</b>
+        <div class="ai-report" v-html="rec.analysisReport"></div>
       </div>
       <div v-else><b>暂无AI评估报告</b></div>
     </div>

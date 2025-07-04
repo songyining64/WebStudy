@@ -10,6 +10,7 @@
         <result column="emotion" property="emotion" />
         <result column="record_time" property="recordTime" />
         <result column="remark" property="remark" />
+        <result column="analysis_report" property="analysisReport" />
         <!-- 暂时注释掉不存在的列 -->
         <!-- <result column="content" property="content" /> -->
         <!-- <result column="suggestions" property="suggestions" /> -->
@@ -17,7 +18,7 @@
 
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
-        id, user_id, username, emotion, record_time, remark
+        id, user_id, username, emotion, record_time, remark, analysis_report
     </sql>
 
     <!-- 分页查询情绪记录，支持按用户名和情绪类型搜索 -->

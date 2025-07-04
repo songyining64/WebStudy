@@ -67,7 +67,7 @@ public class EmotionRecordController {
         try {
             EmotionRecord record = new EmotionRecord();
             record.setUserId(Long.valueOf(payload.get("userId").toString()));
-            record.setContent(payload.get("answers").toString());
+            // record.setContent(payload.get("answers").toString()); // 移除不存在的setContent方法
 
             // 读取 persona prompt
             String persona = new String(
@@ -80,11 +80,25 @@ public class EmotionRecordController {
             String aiReport = deepSeekClient.chat(prompt);
             System.out.println("AI返回内容: " + aiReport);
 
+            // 解析AI返回内容，假设格式为：主情绪：xxx\n分析报告：yyy
+            String mainEmotion = "AI分析";
+            String analysisReport = aiReport;
+            if (aiReport != null && aiReport.contains("主情绪：")) {
+                int start = aiReport.indexOf("主情绪：") + 4;
+                int end = aiReport.indexOf("\n", start);
+                if (end == -1) end = aiReport.length();
+                mainEmotion = aiReport.substring(start, end).trim();
+                int reportIdx = aiReport.indexOf("分析报告：");
+                if (reportIdx != -1) {
+                    analysisReport = aiReport.substring(reportIdx + 5).trim();
+                }
+            }
+
             // 存AI报告到数据库
-            record.setSuggestions(aiReport);
+            record.setAnalysisReport(analysisReport);
             record.setRecordTime(java.time.LocalDateTime.now());
-            // 确保设置了必要字段
-            record.setEmotion("AI分析");
+            // 设置主情绪类型
+            record.setEmotion(mainEmotion);
             record.setRemark("AI情绪分析结果");
             // 使用 service 添加记录
             emotionRecordService.addRecord(record);
