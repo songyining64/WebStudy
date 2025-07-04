@@ -386,32 +386,86 @@
     <!-- 高级搜索面板 -->
     <div v-if="showAdvancedSearch" class="advanced-search-panel">
       <div class="advanced-search-form">
+        <div class="advanced-search-header">
+          <h3>高级搜索</h3>
+          <el-button type="text" @click="showAdvancedSearch = false" class="close-search-btn">
+            <el-icon><Close /></el-icon>
+          </el-button>
+        </div>
+        
         <div class="form-group">
           <label>关键词</label>
-          <input type="text" v-model="advancedSearch.keyword" placeholder="搜索标题、内容和标签" />
+          <div class="input-with-icon">
+            <el-icon><Search /></el-icon>
+            <input 
+              type="text" 
+              v-model="advancedSearch.keyword" 
+              placeholder="搜索标题、内容和标签" 
+              class="styled-input"
+            />
+          </div>
         </div>
+        
         <div class="form-group">
           <label>分类</label>
-          <select v-model="advancedSearch.category" title="筛选分类">
-            <option value="">全部分类</option>
-            <option v-for="category in categories.slice(1)" :key="category.value" :value="category.value">
-              {{ category.label }}
-            </option>
-          </select>
+          <div class="select-wrapper">
+            <select 
+              v-model="advancedSearch.category" 
+              title="筛选分类" 
+              class="styled-select"
+            >
+              <option value="">全部分类</option>
+              <option v-for="category in categories.slice(1)" :key="category.value" :value="category.value">
+                {{ category.label }}
+              </option>
+            </select>
+            <div class="select-arrow">
+              <el-icon><ArrowDown /></el-icon>
+            </div>
+          </div>
         </div>
-        <div class="form-group">
+        
+        <div class="form-group sort-group">
           <label>排序方式</label>
-          <select v-model="advancedSearch.sortBy" title="高级搜索排序字段">
-            <option value="create_time">发布时间</option>
-            <option value="like_count">点赞数</option>
-            <option value="comment_count">评论数</option>
-          </select>
-          <select v-model="advancedSearch.sortOrder" title="高级搜索排序方式">
-            <option value="DESC">降序</option>
-            <option value="ASC">升序</option>
-          </select>
+          <div class="sort-selects">
+            <div class="select-wrapper half-width">
+              <select 
+                v-model="advancedSearch.sortBy" 
+                title="高级搜索排序字段" 
+                class="styled-select"
+              >
+                <option value="create_time">发布时间</option>
+                <option value="like_count">点赞数</option>
+                <option value="comment_count">评论数</option>
+              </select>
+              <div class="select-arrow">
+                <el-icon><Sort /></el-icon>
+              </div>
+            </div>
+            
+            <div class="select-wrapper half-width">
+              <select 
+                v-model="advancedSearch.sortOrder" 
+                title="高级搜索排序方式" 
+                class="styled-select"
+              >
+                <option value="DESC">降序</option>
+                <option value="ASC">升序</option>
+              </select>
+              <div class="select-arrow">
+                <el-icon><Sort /></el-icon>
+              </div>
+            </div>
+          </div>
         </div>
-        <button class="search-btn" @click="applyAdvancedSearch">搜索</button>
+        
+        <div class="search-actions">
+          <el-button @click="showAdvancedSearch = false" class="cancel-search-btn">取消</el-button>
+          <el-button type="primary" @click="applyAdvancedSearch" class="apply-search-btn">
+            <el-icon><Search /></el-icon>
+            搜索
+          </el-button>
+        </div>
       </div>
     </div>
 
@@ -521,7 +575,7 @@ import {
   getTextResources
 } from '@/api/communityApi'
 // 导入Element Plus图标
-import { Bell, Document, Clock, Picture, Upload, CollectionTag, Plus } from '@element-plus/icons-vue'
+import { Bell, Document, Clock, Picture, Upload, CollectionTag, Plus, Close, Search, ArrowDown, Sort } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -2654,43 +2708,174 @@ textarea.form-control {
   justify-content: center;
   align-items: center;
   z-index: 1001;
+  backdrop-filter: blur(5px);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .advanced-search-form {
   background-color: #fff;
-  border-radius: 8px;
+  border-radius: 12px;
   width: 90%;
-  max-width: 600px;
+  max-width: 500px;
   max-height: 90vh;
   overflow: auto;
-  padding: 16px;
+  padding: 0;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  animation: slideDown 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.advanced-search-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #ebeef5;
+  background: linear-gradient(to right, #3498db, #6dd5fa);
+  border-radius: 12px 12px 0 0;
+}
+
+.advanced-search-header h3 {
+  color: #fff;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.close-search-btn {
+  color: #fff;
+  padding: 8px;
+  margin: 0;
 }
 
 .form-group {
-  margin-bottom: 16px;
+  margin: 0;
+  padding: 16px 20px;
+  border-bottom: 1px solid #ebeef5;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 8px;
-  color: #333;
+  margin-bottom: 10px;
+  color: #606266;
+  font-weight: 500;
+  font-size: 15px;
 }
 
-.form-group input,
-.form-group select {
+.input-with-icon {
+  position: relative;
+}
+
+.input-with-icon .el-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #909399;
+  font-size: 16px;
+}
+
+.styled-input {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 12px 12px 12px 35px;
+  border: 1px solid #dcdfe6;
+  border-radius: 8px;
+  font-size: 15px;
+  box-sizing: border-box;
+  transition: all 0.3s;
 }
 
-.search-btn {
-  padding: 8px 16px;
-  background-color: #1890ff;
-  color: white;
-  border: none;
-  border-radius: 4px;
+.styled-input:focus {
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+  outline: none;
+}
+
+.select-wrapper {
+  position: relative;
+}
+
+.styled-select {
+  width: 100%;
+  padding: 12px 35px 12px 15px;
+  border: 1px solid #dcdfe6;
+  border-radius: 8px;
+  appearance: none;
+  background-color: white;
+  font-size: 15px;
+  color: #606266;
   cursor: pointer;
+  transition: all 0.3s;
+}
+
+.styled-select:focus {
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+  outline: none;
+}
+
+.select-arrow {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #909399;
+}
+
+.sort-group {
+  border-bottom: none;
+}
+
+.sort-selects {
+  display: flex;
+  gap: 10px;
+}
+
+.half-width {
+  flex: 1;
+}
+
+.search-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  background-color: #f9fafb;
+  border-top: 1px solid #ebeef5;
+  border-radius: 0 0 12px 12px;
+}
+
+.apply-search-btn {
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cancel-search-btn {
+  border: 1px solid #dcdfe6;
 }
 
 /* 图片上传区域样式 */
