@@ -28,12 +28,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RestController
 @RequestMapping("/api/resource")
 public class ResourceController {
+    private static final Logger logger = LoggerFactory.getLogger(ResourceController.class);
 
     @Autowired
     private VideoResourceService videoResourceService;
@@ -51,6 +54,7 @@ public class ResourceController {
 
     @GetMapping("/recommend")
     public Result<?> recommendResources(@RequestParam Long userId) {
+        logger.info("获取用户 {} 的推荐资源", userId);
         UserAssessment latestAssessment = userAssessmentService.getLatestAssessment(userId);
 
         List<VideoResource> videoResources = new ArrayList<>();
@@ -58,13 +62,16 @@ public class ResourceController {
 
         if (latestAssessment != null) {
             String emotionTag = extractEmotionTagFromAssessment(latestAssessment.getReport());
+            logger.info("用户 {} 的情绪标签: {}", userId, emotionTag);
             videoResources = videoResourceService.list(new QueryWrapper<VideoResource>().eq("emotion_tag", emotionTag));
             textResources = textResourceService.list(new QueryWrapper<TextResource>().eq("emotion_tag", emotionTag));
         } else {
+            logger.info("用户 {} 没有评估信息，返回默认资源", userId);
             videoResources = videoResourceService.list(new QueryWrapper<VideoResource>().eq("emotion_tag", "default"));
             textResources = textResourceService.list(new QueryWrapper<TextResource>().eq("emotion_tag", "default"));
         }
 
+        logger.info("为用户 {} 返回 {} 个视频资源和 {} 个文案资源", userId, videoResources.size(), textResources.size());
         return Result.success(new ResourceRecommendation(videoResources, textResources));
     }
 
@@ -122,50 +129,96 @@ public class ResourceController {
 
     @GetMapping("/videos")
     public Result<List<VideoResource>> listVideos() {
-        return Result.success(videoResourceService.list());
+        logger.info("获取所有视频资源");
+        List<VideoResource> videos = videoResourceService.list();
+        logger.info("返回 {} 个视频资源", videos.size());
+        return Result.success(videos);
     }
 
     @PostMapping("/videos")
     public Result<?> addVideo(@RequestBody VideoResource videoResource) {
+        logger.info("添加视频资源: {}", videoResource.getTitle());
+        
+        // 设置上传时间
         videoResource.setUploadTime(LocalDateTime.now());
+        
+        // 如果没有设置情绪标签，设置默认值
+        if (videoResource.getEmotionTag() == null || videoResource.getEmotionTag().isEmpty()) {
+            videoResource.setEmotionTag("default");
+        }
+        
+        // 保存视频资源
+        try {
         videoResourceService.save(videoResource);
+            logger.info("视频资源添加成功，ID: {}", videoResource.getId());
         return Result.success();
+        } catch (Exception e) {
+            logger.error("视频资源添加失败: {}", e.getMessage(), e);
+            return Result.error("添加失败: " + e.getMessage());
+        }
     }
 
     @DeleteMapping("/videos/{id}")
     public Result<?> deleteVideo(@PathVariable Long id) {
+        logger.info("删除视频资源，ID: {}", id);
         boolean success = videoResourceService.removeById(id);
+        logger.info("删除视频资源 {} {}", id, success ? "成功" : "失败");
         return success ? Result.success() : Result.error("删除失败");
     }
 
     @PutMapping("/videos")
     public Result<?> updateVideo(@RequestBody VideoResource videoResource) {
+        logger.info("更新视频资源，ID: {}", videoResource.getId());
         boolean success = videoResourceService.updateById(videoResource);
+        logger.info("更新视频资源 {} {}", videoResource.getId(), success ? "成功" : "失败");
         return success ? Result.success() : Result.error("更新失败");
     }
 
     @GetMapping("/texts")
     public Result<List<TextResource>> listTexts() {
-        return Result.success(textResourceService.list());
+        logger.info("获取所有文案资源");
+        List<TextResource> texts = textResourceService.list();
+        logger.info("返回 {} 个文案资源", texts.size());
+        return Result.success(texts);
     }
 
     @PostMapping("/texts")
     public Result<?> addText(@RequestBody TextResource textResource) {
+        logger.info("添加文案资源: {}", textResource.getTitle());
+        
+        // 设置创建时间
         textResource.setCreateTime(LocalDateTime.now());
+        
+        // 如果没有设置情绪标签，设置默认值
+        if (textResource.getEmotionTag() == null || textResource.getEmotionTag().isEmpty()) {
+            textResource.setEmotionTag("default");
+        }
+        
+        // 保存文案资源
+        try {
         textResourceService.save(textResource);
+            logger.info("文案资源添加成功，ID: {}", textResource.getId());
         return Result.success();
+        } catch (Exception e) {
+            logger.error("文案资源添加失败: {}", e.getMessage(), e);
+            return Result.error("添加失败: " + e.getMessage());
+        }
     }
 
     @DeleteMapping("/texts/{id}")
     public Result<?> deleteText(@PathVariable Long id) {
+        logger.info("删除文案资源，ID: {}", id);
         boolean success = textResourceService.removeById(id);
+        logger.info("删除文案资源 {} {}", id, success ? "成功" : "失败");
         return success ? Result.success() : Result.error("删除失败");
     }
 
     @PutMapping("/texts")
     public Result<?> updateText(@RequestBody TextResource textResource) {
+        logger.info("更新文案资源，ID: {}", textResource.getId());
         textResource.setUpdateTime(LocalDateTime.now());
         boolean success = textResourceService.updateById(textResource);
+        logger.info("更新文案资源 {} {}", textResource.getId(), success ? "成功" : "失败");
         return success ? Result.success() : Result.error("更新失败");
     }
 

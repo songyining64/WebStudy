@@ -343,6 +343,10 @@
           </el-dialog>
         </el-tab-pane>
 
+        <el-tab-pane label="资源管理" name="resources">
+          <ResourceManager />
+        </el-tab-pane>
+
         <el-tab-pane label="系统设置" name="settings">
           <div class="settings-container">
             <div class="settings-header">
@@ -514,6 +518,7 @@ import {
 } from '@element-plus/icons-vue';
 import { adminApi } from '@/api/adminApi';
 import defaultAvatar from '@/assets/default-avatar.png';
+import ResourceManager from '@/components/ResourceManager.vue';
 
 const router = useRouter();
 const activeTab = ref('users');
