@@ -16,6 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
@@ -53,26 +54,14 @@ public class ResourceController {
     // 推荐资源接口
 
     @GetMapping("/recommend")
-    public Result<?> recommendResources(@RequestParam Long userId) {
-        logger.info("获取用户 {} 的推荐资源", userId);
-        UserAssessment latestAssessment = userAssessmentService.getLatestAssessment(userId);
-
-        List<VideoResource> videoResources = new ArrayList<>();
-        List<TextResource> textResources = new ArrayList<>();
-
-        if (latestAssessment != null) {
-            String emotionTag = extractEmotionTagFromAssessment(latestAssessment.getReport());
-            logger.info("用户 {} 的情绪标签: {}", userId, emotionTag);
-            videoResources = videoResourceService.list(new QueryWrapper<VideoResource>().eq("emotion_tag", emotionTag));
-            textResources = textResourceService.list(new QueryWrapper<TextResource>().eq("emotion_tag", emotionTag));
-        } else {
-            logger.info("用户 {} 没有评估信息，返回默认资源", userId);
-            videoResources = videoResourceService.list(new QueryWrapper<VideoResource>().eq("emotion_tag", "default"));
-            textResources = textResourceService.list(new QueryWrapper<TextResource>().eq("emotion_tag", "default"));
-        }
-
-        logger.info("为用户 {} 返回 {} 个视频资源和 {} 个文案资源", userId, videoResources.size(), textResources.size());
-        return Result.success(new ResourceRecommendation(videoResources, textResources));
+    public Result<Map<String, Object>> recommendResources(@RequestParam Long userId) {
+        // 直接返回所有视频和文案资源，按顺序一一对应
+        List<VideoResource> videos = videoResourceService.list();
+        List<TextResource> texts = textResourceService.list();
+        Map<String, Object> data = new HashMap<>();
+        data.put("videos", videos);
+        data.put("texts", texts);
+        return Result.success(data);
     }
 
     private static class ResourceRecommendation {
@@ -296,5 +285,24 @@ public class ResourceController {
         }
 
         return Result.success(result);
+    }
+
+    @PostMapping("/upload")
+    public Result<String> uploadImage(@RequestParam("file") MultipartFile file) {
+        try {
+            if (file.isEmpty()) {
+                return Result.error("上传文件为空");
+            }
+            String originalFilename = file.getOriginalFilename();
+            String fileName = java.util.UUID.randomUUID() + "_" + originalFilename;
+            java.nio.file.Path uploadPath = java.nio.file.Paths.get(uploadDir, fileName);
+            java.nio.file.Files.createDirectories(uploadPath.getParent());
+            file.transferTo(uploadPath.toFile());
+            String url = "/mental/static/upload/" + fileName;
+            return Result.success(url);
+        } catch (Exception e) {
+            logger.error("图片上传失败", e);
+            return Result.error("图片上传失败: " + e.getMessage());
+        }
     }
 }

@@ -26,4 +26,7 @@ public class TextResource {
 
     @TableField("emotion_tag") // 添加情绪标签字段
     private String emotionTag;
+
+    @TableField("image_url")
+    private String imageUrl;
 }
