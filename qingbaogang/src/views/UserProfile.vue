@@ -33,7 +33,7 @@
           <img v-if="post.images" :src="getFirstImage(post.images)" class="post-img" alt="帖子图片" />
           <div class="post-info">
             <div class="post-title">{{ post.title }}</div>
-            <div class="post-content">{{ post.content.slice(0, 48) }}{{ post.content.length>48?'...':'' }}</div>
+            <div class="post-content">{{ post.content ? (post.content.slice(0, 48) + (post.content.length>48?'...':'')) : '无内容' }}</div>
             <div class="post-meta">
               <span class="post-author">{{ post.username || post.author }}</span>
               <span class="post-tag" v-for="tag in getPostTags(post)" :key="tag">#{{ tag }}</span>
@@ -156,9 +156,9 @@ const getFirstImage = (images) => {
   if (!images) return ''
   if (typeof images === 'string') {
     const imageArray = images.split(',')
-    return imageArray[0]
+    return getImageUrl(imageArray[0])
   }
-  return images
+  return getImageUrl(images)
 }
 
 // 切换标签页
@@ -445,6 +445,16 @@ const addComment = async () => {
     console.error('添加评论失败:', error)
     alert('添加评论失败，请稍后重试')
   }
+}
+
+const getImageUrl = (imageUrl) => {
+  if (!imageUrl) return '/src/assets/default-avatar.png';
+  const parts = imageUrl.split('/')
+  const filename = parts[parts.length - 1]
+  if (!filename || filename.trim() === '') {
+    return '/src/assets/default-avatar.png';
+  }
+  return `http://localhost:8080/mental/api/static/direct-image/${filename}`
 }
 
 onMounted(() => {

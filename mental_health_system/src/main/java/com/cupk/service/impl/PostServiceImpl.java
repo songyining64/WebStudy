@@ -47,7 +47,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         boolean success = postLikeService.likePost(postId, userId);
         if (success) {
             // 更新帖子点赞数
-            postMapper.incrementLikeCount(postId);
+            postMapper.increaseLikeCount(postId);
         }
         return success;
     }
@@ -65,7 +65,7 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         boolean success = postLikeService.unlikePost(postId, userId);
         if (success) {
             // 更新帖子点赞数
-            postMapper.decrementLikeCount(postId);
+            postMapper.decreaseLikeCount(postId);
         }
         return success;
     }
@@ -177,29 +177,29 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
     @Override
     public IPage<Post> getPostsByUserId(Long userId, int page, int size) {
         logger.info("获取用户帖子，用户ID: {}, 页码: {}, 每页数量: {}", userId, page, size);
-        
+
         if (userId == null) {
             throw new IllegalArgumentException("用户ID不能为空");
         }
-        
+
         // 创建分页参数
         Page<Post> pageParams = new Page<>(page, size);
-        
+
         // 调用Mapper中的方法查询用户发布的帖子
         return postMapper.selectPostsByUserId(pageParams, userId);
     }
-    
+
     @Override
     public IPage<Post> getFavoritePostsByUserId(Long userId, int page, int size) {
         logger.info("获取用户收藏帖子，用户ID: {}, 页码: {}, 每页数量: {}", userId, page, size);
-        
+
         if (userId == null) {
             throw new IllegalArgumentException("用户ID不能为空");
         }
-        
+
         // 创建分页参数
         Page<Post> pageParams = new Page<>(page, size);
-        
+
         // 调用Mapper中的方法查询用户收藏的帖子
         return postMapper.selectFavoritePostsByUserId(pageParams, userId);
     }
@@ -253,5 +253,25 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
             logger.error("删除帖子过程中发生异常: ID = {}", postId, e);
             throw e; // 重新抛出异常，让事务回滚
         }
+    }
+
+    @Override
+    @Transactional
+    public boolean deletePostByUser(Long postId, Long userId) {
+        if (postId == null || userId == null) {
+            logger.warn("删除帖子失败，postId或userId为空");
+            return false;
+        }
+        Post post = this.getById(postId);
+        if (post == null) {
+            logger.warn("删除帖子失败，帖子不存在: {}", postId);
+            return false;
+        }
+        if (!userId.equals(post.getUserId())) {
+            logger.warn("删除帖子失败，用户{}不是帖子{}的作者", userId, postId);
+            return false;
+        }
+        // 复用已有的removeById方法，自动级联删除相关数据
+        return this.removeById(postId);
     }
 }

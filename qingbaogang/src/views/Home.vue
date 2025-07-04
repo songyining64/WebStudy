@@ -21,20 +21,6 @@
         </div>
       </div>
 
-      <!-- 图片详情弹出层 -->
-      <div class="detail-modal" v-if="showModal" @click.self="closeModal">
-        <div class="detail-content">
-          <div class="detail-image">
-            <img :src="getImgUrl(images[currentDetailIndex])" :alt="`详情图${currentDetailIndex+1}`" />
-          </div>
-          <div class="detail-text">
-            <h3>{{ imageDetails[currentDetailIndex].title }}</h3>
-            <div class="detail-description" v-html="imageDetails[currentDetailIndex].content"></div>
-          </div>
-          <button class="close-btn" @click="closeModal">&times;</button>
-        </div>
-      </div>
-
       <!-- 音乐播放器在推文上方 -->
       <div class="music-player music-player-top">
         <div class="music-info">
@@ -192,8 +178,16 @@ AI+人工审核：屏蔽攻击性言论，对负面帖子触发关怀私信（"�
 </template>
 
 <script>
+import { getRecentNotices, getSystemNotices, getNoticeDetail } from '@/api/communityApi';
+import { Bell, Document, Clock } from '@element-plus/icons-vue'
+
 export default {
   name: 'Home',
+  components: {
+    Bell,
+    Document,
+    Clock
+  },
   data() {
     return {
       images: [
@@ -701,8 +695,21 @@ export default {
       playMode: 'loop',
       isMuted: false,
       volume: 0.5,
-      showPlaylist: false
+      showPlaylist: false,
+      notices: [],
+      showNoticeDetail: false,
+      currentNotice: null,
+      showAllNoticesDialog: false,
+      allNotices: [],
+      noticeTotal: 0,
+      noticePage: 1,
+      noticePageSize: 10,
+      noticesLoading: false
     }
+  },
+  created() {
+    this.startAutoCarousel();
+    this.fetchRecentNotices();
   },
   computed: {
     currentCover() {
@@ -865,6 +872,109 @@ export default {
     },
     handleCarouselMouseLeave() {
       this.startAutoCarousel();
+    },
+    showAllNotices() {
+      this.noticePage = 1; // 重置页码
+      this.showAllNoticesDialog = true;
+      // 对话框打开时会通过 @open 事件触发 fetchNotices 方法
+    },
+    viewNoticeDetail(notice) {
+      // 如果已经有完整的公告信息，直接显示
+      if (notice.content) {
+        this.currentNotice = notice;
+        this.showNoticeDetail = true;
+        return;
+      }
+      
+      // 否则获取详细信息
+      getNoticeDetail(notice.id).then(response => {
+        if (response && response.data) {
+          this.currentNotice = response.data;
+          this.showNoticeDetail = true;
+        }
+      }).catch(error => {
+        console.error('获取公告详情失败:', error);
+        this.$message.error('获取公告详情失败');
+      });
+    },
+    noticePageChange(page) {
+      this.noticePage = page;
+      this.fetchNotices();
+    },
+    fetchNotices() {
+      this.noticesLoading = true;
+      const params = {
+        page: this.noticePage,
+        size: this.noticePageSize
+      };
+      
+      console.log('正在获取系统公告列表，参数:', params);
+      
+      getSystemNotices(params).then(response => {
+        console.log('获取系统公告列表响应:', response);
+        if (response && response.data) {
+          this.allNotices = response.data.records || response.data;
+          this.noticeTotal = response.data.total || response.data.length;
+          console.log('加载的公告数量:', this.allNotices.length);
+        } else {
+          console.warn('获取系统公告列表返回空数据');
+          this.allNotices = [];
+          this.noticeTotal = 0;
+        }
+      }).catch(error => {
+        console.error('获取公告列表失败:', error);
+        // 使用模拟数据
+        this.allNotices = [
+          {
+            id: 'mock1',
+            title: '欢迎使用心理健康系统',
+            content: '这是一条模拟的系统公告，当API未正常工作时会显示。',
+            createTime: new Date().toISOString(),
+            updateTime: new Date().toISOString(),
+            status: 1
+          }
+        ];
+        this.noticeTotal = this.allNotices.length;
+      }).finally(() => {
+        this.noticesLoading = false;
+      });
+    },
+    fetchRecentNotices() {
+      console.log('正在获取最近系统公告');
+      getRecentNotices(5).then(response => {
+        console.log('获取最近系统公告响应:', response);
+        if (response && response.data) {
+          this.notices = Array.isArray(response.data) ? response.data : [response.data];
+          console.log('加载的最近公告数量:', this.notices.length);
+        } else {
+          console.warn('获取最近系统公告返回空数据');
+          this.notices = [];
+        }
+      }).catch(error => {
+        console.error('获取最近公告失败:', error);
+        // 使用模拟数据
+        this.notices = [
+          {
+            id: 'mock1',
+            title: '欢迎使用心理健康系统',
+            content: '这是一条模拟的系统公告，当API未正常工作时会显示。',
+            createTime: new Date().toISOString(),
+            updateTime: new Date().toISOString(),
+            status: 1
+          }
+        ];
+      });
+    },
+    formatDateTime(dateTime) {
+      if (!dateTime) return '';
+      const date = new Date(dateTime);
+      return date.toLocaleString();
+    },
+    truncateContent(content, maxLength) {
+      if (content.length > maxLength) {
+        return content.slice(0, maxLength) + '...';
+      }
+      return content;
     }
   }
 }
@@ -1475,6 +1585,309 @@ export default {
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
+}
+
+/* 系统公告区域样式 */
+.notice-area {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  margin: 20px auto;
+  padding: 15px;
+  max-width: 1200px;
+}
+
+.notice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
+
+.notice-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 18px;
+}
+
+.notice-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.notice-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px dashed #eee;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.notice-item:hover {
+  background-color: #f9f9f9;
+}
+
+.notice-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #333;
+}
+
+.notice-time {
+  font-size: 12px;
+  color: #999;
+}
+
+.notice-content-preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 40px;
+}
+
+.notice-detail .notice-header {
+  border-bottom: 1px solid #eee;
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+}
+
+.notice-detail .notice-header h2 {
+  margin: 0 0 10px 0;
+  font-size: 20px;
+  color: #333;
+}
+
+.notice-detail .notice-meta {
+  display: flex;
+  gap: 20px;
+  font-size: 12px;
+  color: #999;
+}
+
+.notice-detail .notice-content {
+  line-height: 1.6;
+  color: #333;
+}
+
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.notice-banner {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  margin: 20px auto;
+  padding: 15px;
+  max-width: 1200px;
+}
+
+.notice-banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.notice-icon {
+  font-size: 24px;
+  color: #2980b9;
+  margin-right: 10px;
+}
+
+.notice-carousel {
+  flex: 1;
+}
+
+.notice-more {
+  margin-left: 10px;
+}
+
+.notice-item-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px dashed #eee;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.notice-item-banner:hover {
+  background-color: #f9f9f9;
+}
+
+.notice-title-text {
+  font-size: 14px;
+  color: #333;
+}
+
+.notice-time-text {
+  font-size: 12px;
+  color: #999;
+}
+
+/* 重新设计的公告区样式 */
+.announcement-section {
+  background: linear-gradient(135deg, #3498db, #1a5276);
+  border-radius: 8px;
+  margin: 15px auto;
+  max-width: 1200px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.announcement-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.announcement-container {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  color: white;
+}
+
+.announcement-icon {
+  margin-right: 15px;
+  position: relative;
+}
+
+.bell-icon {
+  font-size: 22px;
+  animation: ring 4s ease-in-out infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes ring {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  5%, 15% {
+    transform: rotate(15deg);
+  }
+  10%, 20% {
+    transform: rotate(-15deg);
+  }
+  25% {
+    transform: rotate(0deg);
+  }
+}
+
+.announcement-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.announcement-item {
+  font-size: 16px;
+  line-height: 36px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.announcement-item:hover {
+  transform: translateX(5px);
+}
+
+.announcement-action {
+  margin-left: 20px;
+  white-space: nowrap;
+}
+
+/* 弹出框样式优化 */
+.announcement-detail {
+  padding: 10px;
+}
+
+.announcement-detail-header h2 {
+  margin: 0 0 15px 0;
+  color: #333;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.announcement-detail-meta {
+  display: flex;
+  gap: 15px;
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.announcement-detail-divider {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(52, 152, 219, 0.8), rgba(52, 152, 219, 0.2));
+  margin: 15px 0 20px 0;
+}
+
+.announcement-detail-content {
+  line-height: 1.8;
+  color: #333;
+  font-size: 15px;
+}
+
+.announcement-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.announcement-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  padding: 15px;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.announcement-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 40px rgba(52, 152, 219, 0.2);
+}
+
+.announcement-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.announcement-card-content {
+  font-size: 15px;
+  color: #333;
+}
+
+.announcement-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.announcement-card-time {
+  font-size: 14px;
+  color: #999;
 }
 </style>
 

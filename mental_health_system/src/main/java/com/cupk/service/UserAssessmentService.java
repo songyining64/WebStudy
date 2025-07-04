@@ -55,4 +55,22 @@ public interface UserAssessmentService extends IService<UserAssessment> {
      * @return 评估记录总数
      */
     long count();
+
+    /**
+     * 分页查询用户评估问卷，支持按用户名和问卷标题搜索
+     * 
+     * @param page    页码
+     * @param size    每页大小
+     * @param keyword 关键词（用户名或问卷标题）
+     * @return 分页结果
+     */
+    IPage<UserAssessment> pageUserAssessments(int page, int size, String keyword);
+
+    /**
+     * 删除用户评估问卷
+     * 
+     * @param id 记录ID
+     * @return 是否删除成功
+     */
+    boolean deleteUserAssessment(Long id);
 }

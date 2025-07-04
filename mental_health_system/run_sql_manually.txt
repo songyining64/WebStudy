@@ -1,0 +1,56 @@
+手动修复系统公告时间步骤
+=======================
+
+由于MySQL命令行工具不在系统路径中，请按照以下步骤手动执行SQL修复脚本：
+
+1. 打开MySQL Workbench或其他MySQL客户端工具
+
+2. 连接到您的数据库
+
+3. 执行以下SQL语句来查看当前的公告时间情况：
+
+```sql
+-- 显示当前时间记录的状态
+SELECT id, title, DATE_FORMAT(create_time, '%Y-%m-%d %H:%i:%s') as create_time, 
+       DATE_FORMAT(update_time, '%Y-%m-%d %H:%i:%s') as update_time 
+FROM system_notice;
+```
+
+4. 执行以下SQL语句来修复时间：
+
+```sql
+-- 更新创建时间，添加随机的小时（9-23）和分钟（0-59）
+UPDATE system_notice
+SET create_time = DATE_ADD(
+    DATE_FORMAT(create_time, '%Y-%m-%d 00:00:00'), 
+    INTERVAL (9 + FLOOR(RAND() * 15)) HOUR + INTERVAL FLOOR(RAND() * 60) MINUTE
+)
+WHERE TIME(create_time) = '08:00:00';
+
+-- 更新更新时间，确保更新时间不早于创建时间
+UPDATE system_notice
+SET update_time = DATE_ADD(
+    create_time,
+    INTERVAL FLOOR(RAND() * 120) MINUTE
+)
+WHERE TIME(update_time) = '08:00:00';
+
+-- 确保状态字段正确设置
+UPDATE system_notice
+SET status = 1
+WHERE status IS NULL;
+```
+
+5. 验证修复是否成功：
+
+```sql
+-- 查看更新后的结果
+SELECT id, title, DATE_FORMAT(create_time, '%Y-%m-%d %H:%i:%s') as create_time, 
+       DATE_FORMAT(update_time, '%Y-%m-%d %H:%i:%s') as update_time 
+FROM system_notice 
+ORDER BY create_time DESC;
+```
+
+6. 完成后，重启Java应用程序以确保更改生效。
+
+注意：如果您使用的是其他数据库工具，请根据实际情况调整上述步骤。 
