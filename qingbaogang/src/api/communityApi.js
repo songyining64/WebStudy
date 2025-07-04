@@ -480,4 +480,229 @@ export const addComment = (data) => {
 
     console.log(`发送添加评论请求：`, data);
     return request.post('/api/comments', data);
-} 
+}
+
+// 系统公告相关
+export const getSystemNotices = async (params = {}) => {
+    try {
+        const apiParams = {
+            page: params.page || 1,
+            size: params.size || 10
+        };
+        console.log('获取系统公告，参数:', apiParams);
+        const response = await request.get('/api/notices', { params: apiParams });
+        console.log('系统公告API原始响应:', response);
+
+        // 检查公告时间格式
+        if (response && response.data) {
+            let notices = [];
+
+            // 确定公告数据列表
+            if (response.data.records) {
+                notices = response.data.records;
+            } else if (Array.isArray(response.data)) {
+                notices = response.data;
+            } else {
+                notices = [response.data];
+            }
+
+            // 检查第一条公告的时间格式
+            if (notices.length > 0) {
+                const firstNotice = notices[0];
+                console.log('公告数据示例:', {
+                    id: firstNotice.id,
+                    title: firstNotice.title,
+                    createTime: firstNotice.createTime,
+                    updateTime: firstNotice.updateTime
+                });
+
+                // 检查时间格式
+                if (firstNotice.createTime) {
+                    console.log('创建时间类型:', typeof firstNotice.createTime);
+
+                    try {
+                        const date = new Date(firstNotice.createTime);
+                        console.log('解析后的日期对象:', date);
+                        console.log('时间部分 - 小时:', date.getHours(), '分钟:', date.getMinutes());
+                    } catch (e) {
+                        console.error('解析日期失败:', e);
+                    }
+                }
+            }
+        }
+
+        // 检查响应格式并处理
+        if (response && response.data) {
+            // 如果是分页格式
+            if (response.data.records) {
+                return response;
+            }
+            // 如果是数组格式
+            else if (Array.isArray(response.data)) {
+                return {
+                    data: {
+                        records: response.data,
+                        total: response.data.length,
+                        size: apiParams.size,
+                        current: apiParams.page
+                    }
+                };
+            }
+            // 其他格式，包装成标准格式
+            else {
+                return {
+                    data: {
+                        records: [response.data],
+                        total: 1,
+                        size: apiParams.size,
+                        current: apiParams.page
+                    }
+                };
+            }
+        }
+        return response;
+    } catch (error) {
+        console.warn('获取系统公告失败:', error);
+        // 返回模拟数据
+        return {
+            data: {
+                records: [
+                    {
+                        id: 'mock1',
+                        title: '欢迎使用心理健康系统',
+                        content: '这是一条模拟的系统公告，当API未正常工作时会显示。',
+                        createTime: new Date().toISOString(),
+                        updateTime: new Date().toISOString(),
+                        status: 1
+                    }
+                ],
+                total: 1,
+                size: params.size || 10,
+                current: params.page || 1
+            }
+        };
+    }
+};
+
+export const getRecentNotices = async (limit = 5) => {
+    try {
+        console.log('获取最近系统公告，数量限制:', limit);
+        const response = await request.get(`/api/notices/recent?limit=${limit}`);
+        return response;
+    } catch (error) {
+        console.warn('获取最近系统公告失败:', error);
+        // 返回模拟数据
+        return {
+            data: [
+                {
+                    id: 'mock1',
+                    title: '欢迎使用心理健康系统',
+                    content: '这是一条模拟的系统公告，当API未正常工作时会显示。',
+                    createTime: new Date().toISOString(),
+                    updateTime: new Date().toISOString(),
+                    status: 1
+                }
+            ]
+        };
+    }
+};
+
+export const getNoticeDetail = async (id) => {
+    try {
+        console.log('获取系统公告详情，ID:', id);
+        const response = await request.get(`/api/notices/${id}`);
+        return response;
+    } catch (error) {
+        console.warn('获取系统公告详情失败:', error);
+        // 返回模拟数据
+        return {
+            data: {
+                id: id,
+                title: '系统公告详情',
+                content: '这是一条模拟的系统公告详情，当API未正常工作时会显示。',
+                createTime: new Date().toISOString(),
+                updateTime: new Date().toISOString(),
+                status: 1
+            }
+        };
+    }
+};
+
+export const testNoticeApi = async () => {
+    try {
+        const baseURL = 'http://localhost:8080/mental';
+        const url = `${baseURL}/api/notices`;
+
+        console.log('直接测试系统公告API');
+
+        const response = await axios({
+            method: 'GET',
+            url,
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        console.log('公告API原始响应:', response);
+
+        if (response.data && (response.data.records || Array.isArray(response.data))) {
+            const notices = response.data.records || response.data;
+            if (notices.length > 0) {
+                const firstNotice = notices[0];
+                console.log('公告时间字段类型:', {
+                    createTime: typeof firstNotice.createTime,
+                    createTimeValue: firstNotice.createTime,
+                    updateTime: typeof firstNotice.updateTime,
+                    updateTimeValue: firstNotice.updateTime
+                });
+
+                // 尝试解析日期
+                if (firstNotice.createTime) {
+                    try {
+                        const date = new Date(firstNotice.createTime);
+                        console.log('JS Date解析结果:', date.toString());
+
+                        // 如果是数字（时间戳）
+                        if (!isNaN(Number(firstNotice.createTime))) {
+                            const timestamp = String(firstNotice.createTime).length === 10
+                                ? Number(firstNotice.createTime) * 1000  // 秒转毫秒
+                                : Number(firstNotice.createTime);
+                            const timestampDate = new Date(timestamp);
+                            console.log('时间戳解析结果:', timestampDate.toString());
+                        }
+                    } catch (e) {
+                        console.error('解析日期出错:', e);
+                    }
+                }
+            }
+        }
+
+        return { success: true, data: response.data };
+    } catch (error) {
+        return {
+            success: false,
+            error: error.message,
+            response: error.response?.data
+        };
+    }
+};
+
+export const getServerTime = async () => {
+    try {
+        console.log('获取服务器当前时间');
+        const response = await request.get('/api/notices/server-time');
+        console.log('服务器时间响应:', response);
+        return response;
+    } catch (error) {
+        console.warn('获取服务器时间失败:', error);
+        // 返回模拟数据
+        return {
+            data: {
+                serverTime: new Date().toISOString(),
+                timestamp: Date.now(),
+                formattedTime: new Date().toString()
+            }
+        };
+    }
+}; 

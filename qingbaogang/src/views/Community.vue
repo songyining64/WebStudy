@@ -1,5 +1,32 @@
 <template>
   <div class="community-container">
+    <!-- 系统公告区域 - 添加到社区页面顶部 -->
+    <div class="announcement-section" v-if="notices.length > 0">
+      <div class="announcement-container">
+        <div class="announcement-icon">
+          <el-icon class="bell-icon"><Bell /></el-icon>
+        </div>
+        <div class="announcement-content">
+          <el-carousel 
+            height="36px" 
+            direction="vertical" 
+            :autoplay="true"
+            :interval="4000"
+            indicator-position="none"
+            arrow="never">
+            <el-carousel-item v-for="notice in notices" :key="notice.id" @click="viewNoticeDetail(notice)">
+              <div class="announcement-item">
+                {{ notice.title }}
+              </div>
+            </el-carousel-item>
+          </el-carousel>
+        </div>
+        <div class="announcement-action">
+          <el-button type="primary" size="small" @click="showAllNotices">更多公告</el-button>
+        </div>
+      </div>
+    </div>
+    
     <div class="community-header">
       <div class="search-box">
         <input type="text" v-model="searchQuery" placeholder="搜索帖子/作者/标签..." @keyup.enter="searchPosts" />
@@ -201,6 +228,69 @@
         <button @click="showImageViewer = false" class="close-btn">关闭</button>
       </div>
     </div>
+
+    <!-- 系统公告详情弹窗 -->
+    <el-dialog v-model="showNoticeDetail" title="公告详情" width="650px" destroy-on-close center>
+      <div class="announcement-detail" v-if="currentNotice">
+        <div class="announcement-detail-header">
+          <h2>{{ currentNotice.title }}</h2>
+                      <div class="announcement-detail-meta">
+              <el-tag size="small" effect="plain" type="info">系统公告</el-tag>
+              <span>发布时间: {{ formatDateTime(currentNotice.createTime) }}</span>
+              <span v-if="currentNotice.updateTime && currentNotice.updateTime !== currentNotice.createTime">
+                更新时间: {{ formatDateTime(currentNotice.updateTime) }}
+              </span>
+            </div>
+        </div>
+        <div class="announcement-detail-divider"></div>
+        <div class="announcement-detail-content">
+          <div v-if="currentNotice.content" style="white-space: pre-line;">{{ currentNotice.content }}</div>
+          <el-empty v-else description="暂无详细内容"></el-empty>
+        </div>
+      </div>
+    </el-dialog>
+
+    <!-- 所有系统公告弹窗 -->
+    <el-dialog v-model="showAllNoticesDialog" title="系统公告" width="800px" @open="fetchNotices" destroy-on-close>
+      <div v-loading="noticesLoading" element-loading-text="加载中...">
+        <el-empty v-if="allNotices.length === 0" description="暂无公告"></el-empty>
+        
+        <div class="announcement-list" v-else>
+          <div 
+            v-for="notice in allNotices" 
+            :key="notice.id" 
+            class="announcement-card"
+            @click="viewNoticeDetail(notice)"
+          >
+            <div class="announcement-card-header">
+              <el-icon><Document /></el-icon>
+              <h3>{{ notice.title }}</h3>
+            </div>
+            <div class="announcement-card-content">
+              <p>{{ truncateContent(notice.content, 80) }}</p>
+            </div>
+            <div class="announcement-card-footer">
+              <span class="announcement-card-time">
+                <el-icon><Clock /></el-icon>
+                {{ formatDateTime(notice.createTime) }}
+              </span>
+              <el-button type="primary" size="small" text>查看详情</el-button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="pagination-container" v-if="allNotices.length > 0 && noticeTotal > noticePageSize">
+          <el-pagination
+            background
+            layout="prev, pager, next"
+            :total="noticeTotal"
+            :current-page="noticePage"
+            :page-size="noticePageSize"
+            @current-change="noticePageChange"
+          ></el-pagination>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -221,8 +311,16 @@ import {
   isPostFavorited,
   searchPosts as apiSearchPosts,
   getPostsByCategory,
-  advancedSearchPosts
+  advancedSearchPosts,
+  // 导入公告相关API
+  getRecentNotices,
+  getSystemNotices,
+  getNoticeDetail,
+  testNoticeApi,
+  getServerTime
 } from '@/api/communityApi'
+// 导入Element Plus图标
+import { Bell, Document, Clock } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -310,6 +408,17 @@ const categories = [
   { label: '生活', value: '生活' },
   { label: '其他', value: '其他' }
 ]
+
+// 公告相关状态
+const notices = ref([])
+const showNoticeDetail = ref(false)
+const currentNotice = ref(null)
+const showAllNoticesDialog = ref(false)
+const allNotices = ref([])
+const noticeTotal = ref(0)
+const noticePage = ref(1)
+const noticePageSize = ref(10)
+const noticesLoading = ref(false)
 
 // 获取帖子列表
 const fetchPosts = async () => {
@@ -870,11 +979,51 @@ const applyAdvancedSearch = () => {
   fetchPosts()
 }
 
-// 格式化日期
-const formatDate = (dateString) => {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  return date.toLocaleDateString('zh-CN')
+// 格式化日期，可选择是否包含时间
+const formatDate = (dateTime, includeTime = true) => {
+  if (!dateTime) return '';
+  
+  try {
+    let date;
+    
+    // 处理各种可能的时间格式
+    if (typeof dateTime === 'number') {
+      date = new Date(dateTime);
+    } 
+    else if (!isNaN(Number(dateTime)) && dateTime.toString().length >= 10) {
+      const timestamp = dateTime.toString().length === 10 
+        ? Number(dateTime) * 1000  // 秒转毫秒
+        : Number(dateTime);        // 已经是毫秒
+      date = new Date(timestamp);
+    }
+    else {
+      date = new Date(dateTime);
+      if (isNaN(date.getTime())) {
+        return String(dateTime);
+      }
+    }
+    
+    // 确保日期有效
+    if (isNaN(date.getTime())) {
+      return String(dateTime);
+    }
+    
+    // 格式化为 YYYY-MM-DD 或 YYYY-MM-DD HH:MM
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    if (includeTime) {
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day} ${hours}:${minutes}`;
+    } else {
+      return `${year}-${month}-${day}`;
+    }
+  } catch (error) {
+    console.error('格式化日期出错:', error);
+    return String(dateTime);
+  }
 }
 
 // 跳转到帖子详情
@@ -887,10 +1036,25 @@ const goToProfile = () => {
   router.push('/user-profile')
 }
 
-// 组件挂载后获取帖子列表
+// 组件挂载
 onMounted(() => {
-  // 初始化获取帖子列表
-  fetchPosts()
+  console.log('Community 组件已挂载');
+  fetchPosts();
+  fetchRecentNotices(); // 获取最近公告
+  
+  // 测试服务器时间，帮助调试时间显示问题
+  testServerTime().then(result => {
+    if (result) {
+      console.log('服务器与客户端时间差（分钟）:', result.timeDiffMinutes);
+    }
+  });
+  
+  // 直接测试公告API
+  testNoticeApi().then(result => {
+    console.log('测试公告API结果:', result);
+  }).catch(error => {
+    console.error('测试公告API失败:', error);
+  });
 })
 
 // 处理图片上传
@@ -1192,6 +1356,210 @@ const deleteMyPost = async (post) => {
   } catch (e) {
     alert('删除失败，请稍后重试')
   }
+}
+
+// 格式化日期时间，处理后端返回的时间格式
+const formatDateTime = (dateTime) => {
+  if (!dateTime) return '';
+  
+  try {
+    // 解析日期对象
+    const date = new Date(dateTime);
+    
+    // 检查日期是否有效
+    if (isNaN(date.getTime())) {
+      console.warn('无效的日期时间:', dateTime);
+      return String(dateTime);
+    }
+    
+    // 格式化为年-月-日 时:分
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
+  } catch (error) {
+    console.error('格式化日期时间出错:', error);
+    return String(dateTime);
+  }
+}
+
+// 截断内容
+const truncateContent = (content, maxLength) => {
+  if (!content) return '';
+  return content.length > maxLength ? content.slice(0, maxLength) + '...' : content;
+}
+
+// 处理日期时间显示相关的工具函数可以在这里添加
+
+// 获取最近公告
+const fetchRecentNotices = async () => {
+  console.log('正在获取最近系统公告');
+  try {
+    const response = await getRecentNotices(5);
+    console.log('获取最近系统公告响应:', response);
+    if (response && response.data) {
+      notices.value = Array.isArray(response.data) ? response.data : [response.data];
+      console.log('加载的最近公告数量:', notices.value.length);
+      
+      // 记录公告时间格式
+      if (notices.value.length > 0) {
+        const firstNotice = notices.value[0];
+        console.log('公告时间示例:', firstNotice.createTime, '格式化后:', formatDateTime(firstNotice.createTime));
+      }
+    } else {
+      console.warn('获取最近系统公告返回空数据');
+      notices.value = [];
+    }
+  } catch (error) {
+    console.error('获取最近公告失败:', error);
+    // 使用模拟数据
+    notices.value = [
+      {
+        id: 'mock1',
+        title: '欢迎使用心理健康系统',
+        content: '这是一条模拟的系统公告，当API未正常工作时会显示。',
+        createTime: new Date().toISOString(),
+        updateTime: new Date().toISOString(),
+        status: 1
+      }
+    ];
+  }
+}
+
+// 获取所有公告
+const fetchNotices = async () => {
+  noticesLoading.value = true;
+  const params = {
+    page: noticePage.value,
+    size: noticePageSize.value
+  };
+  
+  console.log('正在获取系统公告列表，参数:', params);
+  
+  try {
+    const response = await getSystemNotices(params);
+    console.log('获取系统公告列表响应:', response);
+    if (response && response.data) {
+      allNotices.value = response.data.records || response.data;
+      noticeTotal.value = response.data.total || response.data.length;
+      console.log('加载的公告数量:', allNotices.value.length);
+      
+      // 调试日期格式
+      if (allNotices.value.length > 0) {
+        const firstNotice = allNotices.value[0];
+        console.log('公告列表中的时间格式:', firstNotice.createTime);
+        console.log('格式化后:', formatDateTime(firstNotice.createTime));
+      }
+    } else {
+      console.warn('获取系统公告列表返回空数据');
+      allNotices.value = [];
+      noticeTotal.value = 0;
+    }
+  } catch (error) {
+    console.error('获取公告列表失败:', error);
+    // 使用模拟数据
+    allNotices.value = [
+      {
+        id: 'mock1',
+        title: '欢迎使用心理健康系统',
+        content: '这是一条模拟的系统公告，当API未正常工作时会显示。',
+        createTime: new Date().toISOString(),
+        updateTime: new Date().toISOString(),
+        status: 1
+      }
+    ];
+    noticeTotal.value = allNotices.value.length;
+  } finally {
+    noticesLoading.value = false;
+  }
+}
+
+// 查看公告详情
+const viewNoticeDetail = (notice) => {
+  // 如果已经有完整的公告信息，直接显示
+  if (notice.content) {
+    // 为避免时间格式问题，确保格式化时间
+    const processedNotice = {
+      ...notice,
+      createTime: notice.createTime,
+      updateTime: notice.updateTime
+    };
+    
+    // 记录原始时间格式用于调试
+    console.log('查看公告详情，原始时间格式:', {
+      createTime: notice.createTime,
+      updateTime: notice.updateTime
+    });
+    
+    currentNotice.value = processedNotice;
+    showNoticeDetail.value = true;
+    return;
+  }
+  
+  // 否则获取详细信息
+  console.log('获取公告详情，ID:', notice.id);
+  getNoticeDetail(notice.id).then(response => {
+    console.log('公告详情API响应:', response);
+    if (response && response.data) {
+      // 确保时间格式正确
+      const detailData = response.data;
+      
+      // 记录原始时间格式用于调试
+      console.log('公告详情中的时间格式:', {
+        createTime: detailData.createTime,
+        updateTime: detailData.updateTime
+      });
+      
+      currentNotice.value = detailData;
+      showNoticeDetail.value = true;
+    }
+  }).catch(error => {
+    console.error('获取公告详情失败:', error);
+    // 使用当前公告信息
+    currentNotice.value = notice;
+    showNoticeDetail.value = true;
+  });
+}
+
+// 查看所有公告
+const showAllNotices = () => {
+  noticePage.value = 1; // 重置页码
+  showAllNoticesDialog.value = true;
+  // 对话框打开时会通过 @open 事件触发 fetchNotices 方法
+}
+
+// 公告分页切换
+const noticePageChange = (page) => {
+  noticePage.value = page;
+  fetchNotices();
+}
+
+// 测试服务器时间
+const testServerTime = async () => {
+  try {
+    const response = await getServerTime();
+    if (response && response.data) {
+      console.log('服务器时间测试结果:', response.data);
+      const serverTime = new Date(response.data.serverTime);
+      const clientTime = new Date();
+      
+      console.log('服务器时间:', serverTime.toLocaleString());
+      console.log('客户端时间:', clientTime.toLocaleString());
+      console.log('时差（分钟）:', Math.round((clientTime - serverTime) / (60 * 1000)));
+      
+      return {
+        serverTime,
+        clientTime,
+        timeDiffMinutes: Math.round((clientTime - serverTime) / (60 * 1000))
+      };
+    }
+  } catch (error) {
+    console.error('测试服务器时间失败:', error);
+  }
+  return null;
 }
 </script>
 
@@ -1776,5 +2144,159 @@ textarea.form-control {
 }
 .delete-item:hover {
   color: #d9363e;
+}
+
+/* 公告区域样式 */
+.announcement-section {
+  background: linear-gradient(135deg, #3498db, #1a5276);
+  border-radius: 8px;
+  margin: 15px auto;
+  margin-bottom: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.announcement-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.announcement-container {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  color: white;
+}
+
+.announcement-icon {
+  margin-right: 15px;
+  position: relative;
+}
+
+.bell-icon {
+  font-size: 22px;
+  animation: ring 4s ease-in-out infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes ring {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  5%, 15% {
+    transform: rotate(15deg);
+  }
+  10%, 20% {
+    transform: rotate(-15deg);
+  }
+  25% {
+    transform: rotate(0deg);
+  }
+}
+
+.announcement-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.announcement-item {
+  font-size: 16px;
+  line-height: 36px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.announcement-item:hover {
+  transform: translateX(5px);
+}
+
+.announcement-action {
+  margin-left: 20px;
+  white-space: nowrap;
+}
+
+/* 弹出框样式优化 */
+.announcement-detail {
+  padding: 10px;
+}
+
+.announcement-detail-header h2 {
+  margin: 0 0 15px 0;
+  color: #333;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.announcement-detail-meta {
+  display: flex;
+  gap: 15px;
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.announcement-detail-divider {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(52, 152, 219, 0.8), rgba(52, 152, 219, 0.2));
+  margin: 15px 0 20px 0;
+}
+
+.announcement-detail-content {
+  line-height: 1.8;
+  color: #333;
+  font-size: 15px;
+}
+
+.announcement-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.announcement-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  padding: 15px;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.announcement-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 40px rgba(52, 152, 219, 0.2);
+}
+
+.announcement-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.announcement-card-content {
+  font-size: 15px;
+  color: #333;
+}
+
+.announcement-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.announcement-card-time {
+  font-size: 14px;
+  color: #999;
 }
 </style> 
