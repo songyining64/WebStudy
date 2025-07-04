@@ -226,6 +226,14 @@
               </template>
             </el-table-column>
             <el-table-column prop="remark" label="备注" min-width="200"></el-table-column>
+            <el-table-column prop="analysisReport" label="AI评估报告" min-width="220">
+              <template #default="scope">
+                <el-tooltip v-if="scope.row.analysisReport" class="item" effect="dark" :content="scope.row.analysisReport" placement="top">
+                  <span>{{ scope.row.analysisReport.length > 30 ? scope.row.analysisReport.slice(0, 30) + '...' : scope.row.analysisReport }}</span>
+                </el-tooltip>
+                <span v-else>暂无</span>
+              </template>
+            </el-table-column>
             <el-table-column label="记录时间" width="180">
               <template #default="scope">
                 {{ formatDateTime(scope.row.recordTime) }}

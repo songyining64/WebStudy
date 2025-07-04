@@ -29,12 +29,6 @@ public class EmotionRecord implements Serializable {
 
     private String remark;
 
-    // 新增字段 - 这些字段可能在数据库中不存在
-    // 在执行完 emotion_record_table.sql 脚本后才能使用这些字段
-    // 暂时设为 transient，不参与数据库操作
-    @TableField(exist = false)
-    private transient String content; // 内容
-
-    @TableField(exist = false)
-    private transient String suggestions; // 建议
+    // 新增字段：情绪分析报告
+    private String analysisReport;
 }
