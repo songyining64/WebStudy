@@ -55,22 +55,31 @@
       </div>
 
       <div v-if="!loading && recommendedResources.texts && recommendedResources.texts.length > 0" class="resource-section">
-        <h2>文案资源</h2>
-        <div class="text-grid">
-          <div 
-            v-for="text in recommendedResources.texts" 
-            :key="text.id" 
-            class="text-card"
-            @click="openTextModal(text)"
+        <h2>推荐资源</h2>
+        <div class="recommend-list">
+          <div
+            v-for="(text, i) in recommendedResources.texts"
+            :key="text.id"
+            class="recommend-item"
           >
-            <div class="text-header">
-              <h3>{{ text.title }}</h3>
-              <div class="text-tag" :class="getEmotionTagClass(text.emotionTag)">
-                {{ getEmotionTagText(text.emotionTag) }}
-              </div>
+            <div class="img-box">
+              <img
+                :src="text.imageUrl"
+                alt="文案图片"
+                style="cursor: pointer"
+                v-if="recommendedResources.videos && recommendedResources.videos[i]"
+                @click="openVideoModal(recommendedResources.videos[i])"
+              />
+              <img
+                v-else
+                :src="text.imageUrl"
+                alt="文案图片"
+                style="opacity:0.7;cursor:not-allowed"
+              />
             </div>
-            <div class="text-preview">
-              <p>{{ truncateText(text.content, 150) }}</p>
+            <div class="text-box">
+              <h3>{{ text.title }}</h3>
+              <p>{{ text.content }}</p>
             </div>
           </div>
         </div>
@@ -88,6 +97,7 @@
           </div>
           <div class="video-container">
             <video 
+              v-if="isMp4(currentVideo.url)"
               ref="videoPlayer" 
               controls 
               autoplay
@@ -96,6 +106,13 @@
               <source :src="currentVideo.url" type="video/mp4">
               您的浏览器不支持视频播放
             </video>
+            <iframe
+              v-else
+              :src="getIframeUrl(currentVideo.url)"
+              frameborder="0"
+              allowfullscreen
+              style="width: 100%; height: 400px;"
+            ></iframe>
           </div>
           <div class="video-description">
             <p>{{ currentVideo.description }}</p>
@@ -361,13 +378,17 @@ export default {
           this.loading = false;
           return;
         }
-        
         const response = await getRecommendedResources(userId);
-        if (response && response.success) {
+        // 修正判断逻辑：只要有 data.videos 或 data.texts 就展示
+        if (
+          response &&
+          ((response.success === true) || response.code === 200 || response.status === 200) &&
+          response.data &&
+          (Array.isArray(response.data.videos) || Array.isArray(response.data.texts))
+        ) {
           this.recommendedResources = response.data;
-          // 如果没有推荐资源，显示静态内容
-          if ((!this.recommendedResources.videos || this.recommendedResources.videos.length === 0) && 
-              (!this.recommendedResources.texts || this.recommendedResources.texts.length === 0)) {
+          if ((!(this.recommendedResources.videos && this.recommendedResources.videos.length > 0)) && 
+              (!(this.recommendedResources.texts && this.recommendedResources.texts.length > 0))) {
             this.showStaticContent = true;
           }
         } else {
@@ -440,6 +461,13 @@ export default {
       if (!content) return '';
       // 将换行符转换为<br>标签
       return content.replace(/\n/g, '<br>');
+    },
+    isMp4(url) {
+      return url && url.endsWith('.mp4');
+    },
+    getIframeUrl(url) {
+      // 可根据实际需要适配B站、腾讯等外链
+      return url;
     }
   }
 }
@@ -702,74 +730,49 @@ export default {
   font-weight: 500;
 }
 
-.text-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 25px;
-}
-
-.text-card {
-  background-color: white;
-  border-radius: 10px;
-  padding: 20px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s, box-shadow 0.3s;
-  cursor: pointer;
-}
-
-.text-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
-}
-
-.text-header {
+.recommend-list {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 32px;
+  margin: 40px auto;
+  max-width: 800px;
+}
+.recommend-item {
+  display: flex;
   align-items: center;
-  margin-bottom: 15px;
+  background: #fffbe6;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px #eee;
+  padding: 24px;
 }
-
-.text-header h3 {
-  font-size: 1.3rem;
-  color: #2c3e50;
+.img-box {
+  flex: 0 0 180px;
+  margin-right: 32px;
 }
-
-.text-tag {
-  padding: 3px 10px;
-  border-radius: 15px;
-  font-size: 0.8rem;
-  font-weight: 500;
+.img-box img {
+  width: 180px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
 }
-
-.text-preview {
+.img-box img:hover {
+  box-shadow: 0 0 8px #409eff;
+}
+.text-box {
+  flex: 1;
+}
+.text-box h3 {
+  margin: 0 0 12px 0;
+  font-size: 1.2rem;
+  color: #333;
+}
+.text-box p {
+  margin: 0;
+  color: #666;
   font-size: 1rem;
-  color: #34495e;
-  line-height: 1.6;
-  height: 8rem;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 5;
-  -webkit-box-orient: vertical;
-}
-
-.tag-low-risk {
-  background-color: #e8f4fc;
-  color: #3498db;
-}
-
-.tag-medium-risk {
-  background-color: #fef5e7;
-  color: #f39c12;
-}
-
-.tag-high-risk {
-  background-color: #fdedec;
-  color: #e74c3c;
-}
-
-.tag-default {
-  background-color: #eaeded;
-  color: #7f8c8d;
+  line-height: 1.7;
 }
 
 .loading-container {
@@ -896,7 +899,7 @@ export default {
 }
 
 @media (max-width: 768px) {
-  .video-grid, .text-grid {
+  .video-grid, .recommend-list {
     grid-template-columns: 1fr;
   }
   
