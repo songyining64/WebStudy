@@ -54,6 +54,9 @@
             <el-dropdown-item divided @click="handleLogout">
               <el-icon><switch-button /></el-icon> 退出登录
             </el-dropdown-item>
+            <el-dropdown-item class="danger-item" @click="handleDeactivate">
+              <el-icon><delete /></el-icon> 注销账号
+            </el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>
@@ -75,9 +78,11 @@ import {
   Setting,
   SwitchButton,
   Management,
-  User
+  User,
+  Delete
 } from '@element-plus/icons-vue'
 import defaultAvatarUrl from '@/assets/default-avatar.png'
+import { ElMessageBox } from 'element-plus'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -95,6 +100,23 @@ const handleLogout = async () => {
   userStore.clearUserData()
   localStorage.removeItem('authToken')
   await router.push('/')
+}
+
+// 处理账号注销
+const handleDeactivate = () => {
+  ElMessageBox.confirm(
+    '您确定要前往账号注销页面吗？此操作将引导您完成账号注销流程。',
+    '前往账号注销',
+    {
+      confirmButtonText: '确认',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(() => {
+    router.push('/settings')
+  }).catch(() => {
+    // 用户取消操作
+  })
 }
 </script>
 
@@ -197,19 +219,11 @@ const handleLogout = async () => {
   line-height: 1.4;
 }
 
-.user-role {
-  margin-top: 8px;
+.danger-item {
+  color: #f56c6c !important;
 }
 
-:deep(.el-dropdown-menu__item) {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-}
-
-:deep(.el-dropdown-menu__item i) {
-  margin-right: 4px;
-  font-size: 16px;
+.danger-item:hover {
+  background-color: #fef0f0 !important;
 }
 </style>

@@ -705,4 +705,21 @@ export const getServerTime = async () => {
             }
         };
     }
-}; 
+};
+
+export const getHotTags = () => request.get('/api/post/hot-tags')
+export const getHotPostsOfWeek = () => request.get('/api/post/hot-week')
+export const getTextResources = () => request.get('/api/resource/texts')
+
+// 用户注销账号
+export const deactivateAccount = (userId) => {
+    console.log(`正在请求注销账号，用户ID: ${userId}`);
+
+    // 确保请求头中包含用户ID
+    const headers = {
+        'X-User-ID': userId,
+        'X-User-Role': localStorage.getItem('userRole') || 'user'
+    };
+
+    return request.delete(`/api/user/deactivate/${userId}`, { headers });
+} 

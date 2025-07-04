@@ -16,6 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.Serializable;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.temporal.WeekFields;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements PostService {
@@ -273,5 +278,69 @@ public class PostServiceImpl extends ServiceImpl<PostMapper, Post> implements Po
         }
         // 复用已有的removeById方法，自动级联删除相关数据
         return this.removeById(postId);
+    }
+
+    @Override
+    public List<Map<String, Object>> getHotTags(int limit) {
+        logger.info("统计热门标签，限制数量: {}", limit);
+
+        // 获取所有帖子
+        List<Post> allPosts = this.list();
+        Map<String, Integer> tagCount = new HashMap<>();
+
+        // 统计每个标签出现的次数
+        for (Post post : allPosts) {
+            if (post.getTags() != null && !post.getTags().isEmpty()) {
+                String[] tags = post.getTags().split(",");
+                for (String tag : tags) {
+                    String t = tag.trim();
+                    if (!t.isEmpty()) {
+                        tagCount.put(t, tagCount.getOrDefault(t, 0) + 1);
+                    }
+                }
+            }
+        }
+
+        logger.info("共统计 {} 个标签", tagCount.size());
+
+        // 排序并取前limit个
+        return tagCount.entrySet().stream()
+                .sorted((a, b) -> b.getValue() - a.getValue())
+                .limit(limit)
+                .map(e -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("name", e.getKey());
+                    map.put("count", e.getValue());
+                    return map;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Post> getHotPostsOfWeek(int limit) {
+        logger.info("获取本周热门帖子，限制数量: {}", limit);
+
+        // 获取本周的起止日期
+        LocalDate now = LocalDate.now();
+        WeekFields weekFields = WeekFields.of(Locale.getDefault());
+        LocalDate startOfWeek = now.with(weekFields.dayOfWeek(), 1);
+        LocalDate endOfWeek = now.with(weekFields.dayOfWeek(), 7);
+
+        LocalDateTime startDateTime = startOfWeek.atStartOfDay();
+        LocalDateTime endDateTime = endOfWeek.atTime(23, 59, 59);
+
+        logger.info("本周日期范围: {} 至 {}", startDateTime, endDateTime);
+
+        // 查询本周内发布的帖子，按点赞数和评论数排序
+        QueryWrapper<Post> wrapper = new QueryWrapper<>();
+        wrapper.between("create_time", startDateTime, endDateTime)
+                .orderByDesc("like_count")
+                .orderByDesc("comment_count")
+                .last("limit " + limit);
+
+        List<Post> hotPosts = this.list(wrapper);
+        logger.info("查询到 {} 个本周热门帖子", hotPosts.size());
+
+        return hotPosts;
     }
 }
