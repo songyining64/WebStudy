@@ -13,6 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.util.List;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/post")
 public class PostController {
@@ -242,5 +245,23 @@ public class PostController {
         } else {
             return Result.error("删除失败，您只能删除自己发的帖子");
         }
+    }
+
+    // 本周热帖
+    @GetMapping("/hot-week")
+    public Result<List<Post>> getHotPostsOfWeek() {
+        logger.info("获取本周热门帖子");
+        List<Post> hotPosts = postService.getHotPostsOfWeek(3);
+        logger.info("返回 {} 个本周热门帖子", hotPosts.size());
+        return Result.success(hotPosts);
+    }
+
+    // 热门标签云
+    @GetMapping("/hot-tags")
+    public Result<List<Map<String, Object>>> getHotTags() {
+        logger.info("获取热门标签云");
+        List<Map<String, Object>> hotTags = postService.getHotTags(10);
+        logger.info("返回 {} 个热门标签", hotTags.size());
+        return Result.success(hotTags);
     }
 }

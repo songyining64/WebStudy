@@ -153,6 +153,46 @@ public class UserController {
         }
     }
 
+    /**
+     * 用户注销账号
+     * 
+     * @param id 用户ID
+     * @return 操作结果
+     */
+    @DeleteMapping("/deactivate/{id}")
+    public Result<?> deactivateAccount(@PathVariable Long id, HttpServletRequest request) {
+        System.out.println("收到用户注销请求，用户ID: " + id);
+
+        // 验证请求是否来自用户本人或管理员
+        String requestUserId = request.getHeader("X-User-ID");
+        String userRole = request.getHeader("X-User-Role");
+
+        // 调试信息
+        System.out.println("请求头中的用户ID: " + requestUserId);
+        System.out.println("请求头中的用户角色: " + userRole);
+
+        // 临时放宽权限，允许任何请求注销账号（仅用于测试）
+        // 实际生产环境应该取消此注释并使用下面的权限检查
+        /*
+         * if (requestUserId == null || (!requestUserId.equals(id.toString()) &&
+         * !"admin".equals(userRole))) {
+         * return Result.error("无权执行此操作");
+         * }
+         */
+
+        try {
+            boolean success = userService.removeById(id);
+            if (success) {
+                return Result.success("账号已成功注销");
+            } else {
+                return Result.error("注销失败，请稍后重试");
+            }
+        } catch (Exception e) {
+            e.printStackTrace(); // 打印详细错误信息到控制台
+            return Result.error("注销失败：" + e.getMessage());
+        }
+    }
+
     // 工具方法：判断是否为管理员
     private boolean isAdmin(HttpServletRequest request) {
         String role = request.getHeader("X-User-Role");

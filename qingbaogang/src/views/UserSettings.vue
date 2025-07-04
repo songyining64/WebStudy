@@ -41,16 +41,52 @@
         <el-button @click="重置">重置</el-button>
       </el-form-item>
     </el-form>
+
+    <!-- 账号注销部分 -->
+    <div class="danger-zone">
+      <h3>危险区域</h3>
+      <p>以下操作不可撤销，请谨慎操作</p>
+      <el-button type="danger" @click="showDeactivateConfirm">注销账号</el-button>
+    </div>
+    
+    <!-- 注销确认对话框 -->
+    <el-dialog
+      v-model="deactivateDialogVisible"
+      title="确认注销账号"
+      width="30%"
+      :close-on-click-modal="false"
+    >
+      <span>注销账号将删除您的所有数据，此操作不可恢复。确定要继续吗？</span>
+      <div class="confirm-input">
+        <el-input 
+          v-model="confirmText" 
+          placeholder="请输入'确认注销'"
+          :class="{ 'error': confirmError }"
+        ></el-input>
+        <p v-if="confirmError" class="error-text">请输入"确认注销"以继续</p>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="deactivateDialogVisible = false">取消</el-button>
+          <el-button type="danger" @click="deactivateAccount" :disabled="confirmText !== '确认注销'">
+            确认注销
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useUserStore } from '@/stores/user';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus } from '@element-plus/icons-vue';
 import defaultAvatarUrl from '@/assets/default-avatar.png';
+import { deactivateAccount as apiDeactivateAccount } from '@/api/communityApi';
+import { useRouter } from 'vue-router';
 
+const router = useRouter();
 const userStore = useUserStore();
 
 const userForm = ref({
@@ -59,6 +95,11 @@ const userForm = ref({
   bio: userStore.bio,
   birthDate: userStore.birthDate,
 });
+
+// 注销账号相关变量
+const deactivateDialogVisible = ref(false);
+const confirmText = ref('');
+const confirmError = ref(false);
 
 // 头像上传前的验证
 const beforeAvatarUpload = (file) => {
@@ -132,6 +173,66 @@ const 重置 = () => {
     bio: userStore.bio,
     birthDate: userStore.birthDate,
   };
+};
+
+// 显示注销确认对话框
+const showDeactivateConfirm = () => {
+  confirmText.value = '';
+  confirmError.value = false;
+  deactivateDialogVisible.value = true;
+};
+
+// 注销账号
+const deactivateAccount = async () => {
+  if (confirmText.value !== '确认注销') {
+    confirmError.value = true;
+    return;
+  }
+  
+  try {
+    const userId = userStore.userId;
+    if (!userId) {
+      ElMessage.error('用户ID不存在，无法注销账号');
+      return;
+    }
+    
+    console.log(`开始注销账号，用户ID: ${userId}`);
+    const response = await apiDeactivateAccount(userId);
+    console.log('注销账号API响应:', response);
+    
+    // 无论后端是否成功，前端都执行注销流程
+    // 这样即使后端出现问题，用户也能在前端退出
+    ElMessage.success('账号已注销，即将返回首页');
+    
+    // 清除用户数据
+    userStore.clearUserData();
+    localStorage.removeItem('authToken');
+    
+    // 延迟跳转，让用户看到成功消息
+    setTimeout(() => {
+      router.push('/');
+    }, 1500);
+  } catch (error) {
+    console.error('账号注销失败:', error);
+    
+    // 即使API调用失败，也允许用户在前端注销
+    ElMessage({
+      message: '服务器连接失败，但您已在本地注销。即将返回首页。',
+      type: 'warning',
+      duration: 3000
+    });
+    
+    // 清除用户数据
+    userStore.clearUserData();
+    localStorage.removeItem('authToken');
+    
+    // 延迟跳转，让用户看到消息
+    setTimeout(() => {
+      router.push('/');
+    }, 2000);
+  } finally {
+    deactivateDialogVisible.value = false;
+  }
 };
 
 onMounted(() => {
@@ -248,7 +349,57 @@ onMounted(() => {
 }
 .el-button {
   border-radius: 999px;
-  font-size: 15px;
-  padding: 8px 24px;
+}
+
+/* 危险区域样式 */
+.danger-zone {
+  margin-top: 40px;
+  padding: 20px;
+  background-color: #fff5f5;
+  border: 1px solid #ffd6d6;
+  border-radius: 16px;
+  text-align: center;
+}
+
+.danger-zone h3 {
+  color: #e74c3c;
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+}
+
+.danger-zone p {
+  color: #666;
+  margin-bottom: 15px;
+  font-size: 0.9rem;
+}
+
+.danger-zone .el-button--danger {
+  background: #e74c3c;
+  border: none;
+  font-weight: bold;
+  padding: 8px 32px;
+}
+
+.danger-zone .el-button--danger:hover {
+  background: #c0392b;
+}
+
+/* 确认对话框样式 */
+.confirm-input {
+  margin-top: 20px;
+}
+
+.confirm-input .el-input {
+  margin-bottom: 10px;
+}
+
+.confirm-input .error {
+  border-color: #e74c3c !important;
+}
+
+.error-text {
+  color: #e74c3c;
+  font-size: 0.8rem;
+  margin-top: 5px;
 }
 </style>

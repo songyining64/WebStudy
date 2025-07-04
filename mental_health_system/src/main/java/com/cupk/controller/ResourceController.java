@@ -2,12 +2,9 @@ package com.cupk.controller;
 
 import com.cupk.entity.TextResource;
 import com.cupk.entity.VideoResource;
-import com.cupk.entity.UserAssessment;
 import com.cupk.service.TextResourceService;
 import com.cupk.service.VideoResourceService;
-import com.cupk.service.UserAssessmentService;
 import com.cupk.service.Result;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
@@ -24,7 +21,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,9 +40,6 @@ public class ResourceController {
 
     @Autowired
     private TextResourceService textResourceService;
-
-    @Autowired
-    private UserAssessmentService userAssessmentService;
 
     @Value("${upload.dir:src/main/resources/static/upload/}")
     private String uploadDir;
@@ -127,20 +120,20 @@ public class ResourceController {
     @PostMapping("/videos")
     public Result<?> addVideo(@RequestBody VideoResource videoResource) {
         logger.info("添加视频资源: {}", videoResource.getTitle());
-        
+
         // 设置上传时间
         videoResource.setUploadTime(LocalDateTime.now());
-        
+
         // 如果没有设置情绪标签，设置默认值
         if (videoResource.getEmotionTag() == null || videoResource.getEmotionTag().isEmpty()) {
             videoResource.setEmotionTag("default");
         }
-        
+
         // 保存视频资源
         try {
-        videoResourceService.save(videoResource);
+            videoResourceService.save(videoResource);
             logger.info("视频资源添加成功，ID: {}", videoResource.getId());
-        return Result.success();
+            return Result.success();
         } catch (Exception e) {
             logger.error("视频资源添加失败: {}", e.getMessage(), e);
             return Result.error("添加失败: " + e.getMessage());
@@ -174,20 +167,20 @@ public class ResourceController {
     @PostMapping("/texts")
     public Result<?> addText(@RequestBody TextResource textResource) {
         logger.info("添加文案资源: {}", textResource.getTitle());
-        
+
         // 设置创建时间
         textResource.setCreateTime(LocalDateTime.now());
-        
+
         // 如果没有设置情绪标签，设置默认值
         if (textResource.getEmotionTag() == null || textResource.getEmotionTag().isEmpty()) {
             textResource.setEmotionTag("default");
         }
-        
+
         // 保存文案资源
         try {
-        textResourceService.save(textResource);
+            textResourceService.save(textResource);
             logger.info("文案资源添加成功，ID: {}", textResource.getId());
-        return Result.success();
+            return Result.success();
         } catch (Exception e) {
             logger.error("文案资源添加失败: {}", e.getMessage(), e);
             return Result.error("添加失败: " + e.getMessage());
