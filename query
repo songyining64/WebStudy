@@ -246,3 +246,39 @@ CREATE TABLE `text_resource` (
 ALTER TABLE video_resource ADD COLUMN emotion_tag VARCHAR(50) COMMENT '情绪标签';
 
 ALTER TABLE text_resource ADD COLUMN emotion_tag VARCHAR(50) COMMENT '情绪标签';
+
+DROP TABLE IF EXISTS `emotion_record`;
+CREATE TABLE IF NOT EXISTS `emotion_record` (
+  `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
+  `user_id` BIGINT NOT NULL COMMENT '用户ID',
+  `username` VARCHAR(64) COMMENT '用户名',
+  `emotion` VARCHAR(32) COMMENT '情绪类型',
+  `record_time` DATETIME COMMENT '记录时间',
+  `remark` VARCHAR(255) COMMENT '备注',
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_record_time` (`record_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='情绪记录表';
+
+DROP TABLE IF EXISTS `user_assessment`;
+CREATE TABLE IF NOT EXISTS `user_assessment` (
+  `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
+  `user_id` BIGINT NOT NULL COMMENT '用户ID',
+  `username` VARCHAR(64) COMMENT '用户名',
+  `assessment_title` VARCHAR(128) COMMENT '问卷标题',
+  `score` INT COMMENT '得分',
+  `submit_time` DATETIME COMMENT '提交时间',
+  `detail` TEXT COMMENT '详细信息（JSON格式）',
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_submit_time` (`submit_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户评估问卷表';
+
+CREATE TABLE IF NOT EXISTS `system_notice` (
+  `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
+  `title` VARCHAR(128) NOT NULL COMMENT '公告标题',
+  `content` TEXT NOT NULL COMMENT '公告内容',
+  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `status` TINYINT DEFAULT 1 COMMENT '状态：1有效，0无效',
+  KEY `idx_create_time` (`create_time`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统公告表';
