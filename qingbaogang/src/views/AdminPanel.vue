@@ -192,6 +192,10 @@
           <el-empty description="评估问卷管理功能开发中..."></el-empty>
         </el-tab-pane>
 
+        <el-tab-pane label="资源管理" name="resources">
+          <ResourceManager />
+        </el-tab-pane>
+
         <el-tab-pane label="系统设置" name="settings">
           <el-empty description="系统设置功能开发中..."></el-empty>
         </el-tab-pane>
@@ -241,6 +245,7 @@ import {
 } from '@element-plus/icons-vue';
 import { adminApi } from '@/api/adminApi';
 import defaultAvatar from '@/assets/default-avatar.png';
+import ResourceManager from '@/components/ResourceManager.vue';
 
 const router = useRouter();
 const activeTab = ref('users');
@@ -536,6 +541,9 @@ const handleTabChange = (tab) => {
     fetchUsers();
   } else if (tab === 'posts') {
     fetchPosts();
+  } else if (tab === 'resources') {
+    // 资源管理标签页不需要特殊处理，ResourceManager组件会自行加载数据
+    console.log('切换到资源管理标签页');
   }
 };
 

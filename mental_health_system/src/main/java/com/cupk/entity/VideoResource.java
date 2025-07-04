@@ -24,7 +24,7 @@ public class VideoResource {
     @TableField("upload_time")
     private LocalDateTime uploadTime;
     @TableField("uploader_id")
-    private Long uploaderId; //上传者ID,关联用户表
+    private Long uploaderId; // 上传者ID，可以为null
     @TableField("emotion_tag") // 添加情绪标签字段
     private String emotionTag;
 }

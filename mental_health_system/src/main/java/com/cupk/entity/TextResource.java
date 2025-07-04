@@ -18,7 +18,7 @@ public class TextResource {
     @TableField("content")
     private String content;
     @TableField("author_id")
-    private Long authorId; //作者ID,关联用户表
+    private Long authorId; // 作者ID，可以为null
     @TableField("create_time")
     private LocalDateTime createTime;
     @TableField("update_time")
