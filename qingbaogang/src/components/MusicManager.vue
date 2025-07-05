@@ -13,6 +13,7 @@
             <th>歌名</th>
             <th>ID</th>
             <th>歌手</th>
+            <th>分类</th>
             <th>封面</th>
             <th>音频</th>
             <th>操作</th>
@@ -23,6 +24,7 @@
             <td>{{ music.name }}</td>
             <td>{{ music.id }}</td>
             <td>{{ music.artist }}</td>
+            <td>{{ music.category || '未分类' }}</td>
             <td>
               <img v-if="music.coverUrl" :src="getCoverUrl(music.coverUrl)" alt="封面" style="max-width: 60px;" />
             </td>

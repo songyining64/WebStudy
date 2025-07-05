@@ -48,6 +48,9 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+  web:
+    resources:
+      static-locations: file:/F:/webtest/WebStudy/mental_health_system/src/main/resources/static/
 
 mybatis-plus:
   configuration:

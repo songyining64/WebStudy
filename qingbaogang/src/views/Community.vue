@@ -1517,7 +1517,7 @@ const getImageUrl = (imageUrl, index) => {
   }
   
   // 使用直接图片API
-  return `http://localhost:8080/mental/api/static/direct-image/${filename}`
+  return `/mental/upload/image/${filename}`
 }
 
 // 显示图片查看弹窗
@@ -1627,7 +1627,7 @@ const handleImageError = (event, post, index) => {
     }
     
     // 使用我们新创建的API直接获取图片
-    const directImageUrl = `http://localhost:8080/mental/api/static/direct-image/${filename}`
+    const directImageUrl = `/mental/upload/image/${filename}`
     console.log(`使用直接图片API获取: ${directImageUrl}`)
     event.target.src = directImageUrl
     

@@ -490,7 +490,7 @@ const getImageUrl = (imageUrl, index) => {
     }
     
     // 使用直接图片API
-    return `http://localhost:8080/mental/api/static/direct-image/${filename}`
+    return `/mental/upload/image/${filename}`
 }
 
 // 显示图片查看弹窗

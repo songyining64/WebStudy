@@ -13,10 +13,6 @@
             <img :src="getImgUrl(img)" :alt="`轮播图${idx+1}`" />
           </div>
         </div>
-        <div class="arc-carousel-controls">
-          <button class="arrow-btn" @click="prev"><span>&larr;</span></button>
-          <button class="arrow-btn" @click="next"><span>&rarr;</span></button>
-        </div>
       </div>
     </div>
     <div class="resource-content">
@@ -310,8 +306,15 @@ export default {
       showTextModal: false,
       currentVideo: {},
       currentText: {},
-      showStaticContent: false // 是否显示静态内容
+      showStaticContent: false, // 是否显示静态内容
+      carouselTimer: null // 轮播定时器
     }
+  },
+  mounted() {
+    this.startAutoCarousel();
+  },
+  beforeUnmount() {
+    this.clearAutoCarousel();
   },
   created() {
     this.fetchRecommendedResources();
@@ -359,12 +362,6 @@ export default {
         pointerEvents: 'auto',
         transition: 'all 0.6s cubic-bezier(.4,2,.6,1)'
       };
-    },
-    prev() {
-      this.centerIndex = (this.centerIndex - 1 + this.images.length) % this.images.length;
-    },
-    next() {
-      this.centerIndex = (this.centerIndex + 1) % this.images.length;
     },
     async fetchRecommendedResources() {
       this.loading = true;
@@ -468,6 +465,21 @@ export default {
     getIframeUrl(url) {
       // 可根据实际需要适配B站、腾讯等外链
       return url;
+    },
+    startAutoCarousel() {
+      this.clearAutoCarousel();
+      this.carouselTimer = setInterval(() => {
+        this.next();
+      }, 1500);
+    },
+    clearAutoCarousel() {
+      if (this.carouselTimer) {
+        clearInterval(this.carouselTimer);
+        this.carouselTimer = null;
+      }
+    },
+    next() {
+      this.centerIndex = (this.centerIndex + 1) % this.images.length;
     }
   }
 }
@@ -478,25 +490,18 @@ export default {
   padding: 40px 0 0 0;
   min-height: 92vh;
   position: relative;
-  background-color: #f8fafc;
+  background-color: #fff;
 }
 
 /* 使用伪元素添加背景 */
 .resource-main::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url('../assets/ziyuanbeijing.jpg');
-  background-position: center top;
-  background-repeat: repeat-y;
-  background-size: 100% auto;
-  opacity: 0.95;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%; height: 100%;
+  background: #fff;
   z-index: 0;
+  pointer-events: none;
 }
 
 /* 确保内容在背景之上 */
@@ -511,12 +516,12 @@ export default {
   justify-content: center;
   align-items: center;
   min-height: 600px;
-  background: rgba(255, 255, 255, 0.85);
+  background: #e3f2fd;
   margin: 0 auto 0 auto;
   max-width: 1600px;
   position: relative;
-  border-radius: 0;
-  box-shadow: none;
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(33,150,243,0.10);
   border-bottom: none;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -561,38 +566,25 @@ export default {
 }
 .arc-carousel-img.center {
   /* 让中心图片更突出 */
-  box-shadow: 0 8px 32px 0 rgba(52,152,219,0.18), 0 2px 8px 0 rgba(44,62,80,0.10);
+  box-shadow: 0 12px 48px 0 rgba(33,150,243,0.22), 0 2px 8px 0 rgba(44,62,80,0.10);
+  filter: none;
+  opacity: 1;
+  z-index: 10;
+  border: 3px solid #1976d2;
 }
-.arc-carousel-controls {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 32px;
-  gap: 48px;
-}
-.arrow-btn {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: none;
-  background: #f2f6fa;
-  color: #2980b9;
-  font-size: 2.2rem;
-  box-shadow: 0 2px 8px rgba(52,152,219,0.10);
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-}
-.arrow-btn:hover {
-  background: #3498db;
-  color: #fff;
+.arc-carousel-img.center img {
+  box-shadow: 0 8px 32px 0 rgba(33,150,243,0.18);
+  filter: brightness(1.05) saturate(1.1);
 }
 .resource-content {
   margin: 48px auto 0 auto;
   max-width: 1200px;
   padding: 40px;
-  background: rgba(245, 240, 230, 0.9);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: #fff;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(33,150,243,0.10);
 }
 
 .section-title {
@@ -602,8 +594,14 @@ export default {
 
 .section-title h1 {
   font-size: 2.5rem;
-  color: #2c3e50;
+  color: #1976d2;
   margin-bottom: 10px;
+  letter-spacing: 2px;
+  border-left: 6px solid #1976d2;
+  padding-left: 16px;
+  background: linear-gradient(90deg, #e3f2fd 60%, #fff 100%);
+  border-radius: 8px;
+  display: inline-block;
 }
 
 .section-title p {
@@ -619,22 +617,14 @@ export default {
 
 .resource-section h2 {
   font-size: 1.8rem;
-  color: #34495e;
+  color: #1976d2;
   margin-bottom: 20px;
   position: relative;
-  padding-left: 15px;
-}
-
-.resource-section h2::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 5px;
-  height: 25px;
-  background-color: #3498db;
-  border-radius: 3px;
+  padding-left: 18px;
+  background: linear-gradient(90deg, #e3f2fd 60%, #fff 100%);
+  border-radius: 6px;
+  display: inline-block;
+  border-left: 5px solid #1976d2;
 }
 
 .video-grid {
@@ -645,16 +635,18 @@ export default {
 
 .video-card {
   background-color: white;
-  border-radius: 10px;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s, box-shadow 0.3s;
+  box-shadow: 0 5px 15px rgba(33,150,243,0.08);
+  transition: transform 0.3s, box-shadow 0.3s, filter 0.3s;
   cursor: pointer;
+  border: 1.5px solid #1976d2;
 }
 
 .video-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+  transform: translateY(-8px) scale(1.03);
+  box-shadow: 0 12px 32px rgba(33,150,243,0.18);
+  filter: brightness(1.03);
 }
 
 .video-thumbnail {
@@ -703,7 +695,7 @@ export default {
 .video-info h3 {
   font-size: 1.2rem;
   margin-bottom: 8px;
-  color: #2c3e50;
+  color: #1976d2;
   height: 2.4rem;
   overflow: hidden;
   display: -webkit-box;
@@ -724,10 +716,14 @@ export default {
 
 .video-tag {
   display: inline-block;
-  padding: 3px 10px;
+  padding: 3px 12px;
   border-radius: 15px;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 500;
+  background: linear-gradient(90deg, #1976d2 60%, #42a5f5 100%);
+  color: #fff;
+  margin-top: 6px;
+  border: 1px solid #1976d2;
 }
 
 .recommend-list {
@@ -740,10 +736,16 @@ export default {
 .recommend-item {
   display: flex;
   align-items: center;
-  background: #fffbe6;
-  border-radius: 12px;
+  background: linear-gradient(90deg, #e3f2fd 60%, #fff 100%);
+  border-radius: 16px;
   box-shadow: 0 2px 8px #eee;
-  padding: 24px;
+  padding: 28px;
+  border: 1.5px solid #1976d2;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.recommend-item:hover {
+  box-shadow: 0 8px 24px #1976d288;
+  transform: translateY(-4px) scale(1.01);
 }
 .img-box {
   flex: 0 0 180px;
@@ -753,12 +755,14 @@ export default {
   width: 180px;
   height: 120px;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
-  transition: box-shadow 0.2s;
+  transition: box-shadow 0.2s, filter 0.2s;
+  border: 1.5px solid #1976d2;
 }
 .img-box img:hover {
-  box-shadow: 0 0 8px #409eff;
+  box-shadow: 0 0 12px #1976d2;
+  filter: brightness(1.08);
 }
 .text-box {
   flex: 1;
@@ -766,7 +770,7 @@ export default {
 .text-box h3 {
   margin: 0 0 12px 0;
   font-size: 1.2rem;
-  color: #333;
+  color: #1976d2;
 }
 .text-box p {
   margin: 0;
