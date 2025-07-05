@@ -357,6 +357,10 @@
           <ResourceManager />
         </el-tab-pane>
 
+        <el-tab-pane label="音乐管理" name="music">
+          <MusicManager />
+        </el-tab-pane>
+
         <el-tab-pane label="系统设置" name="settings">
           <div class="settings-container">
             <div class="settings-header">
@@ -529,6 +533,7 @@ import {
 import { adminApi } from '@/api/adminApi';
 import defaultAvatar from '@/assets/default-avatar.png';
 import ResourceManager from '@/components/ResourceManager.vue';
+import MusicManager from '@/components/MusicManager.vue';
 
 const router = useRouter();
 const activeTab = ref('users');
