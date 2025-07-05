@@ -77,7 +77,7 @@ management:
         include: "*"
 
 upload:
-  dir: D:/WorkSpace2025/WebStudy/WebStudy/mental_health_system/src/main/resources/static/upload/
+  dir: ${user.dir}/src/main/resources/static/upload/
 
 deepseek:
   api:
@@ -88,3 +88,4 @@ questionnaire:
   file: classpath:questionnaires/default_questionnaire.json
   assessment:
     prompt: "根据以下问卷答案，提供一个心理健康评估报告：\n\n{{answers}}\n\n请给出综合评估，建议和改善方向。"
+

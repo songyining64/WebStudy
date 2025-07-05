@@ -17,6 +17,9 @@ public class UploadController {
 
     @PostMapping("/image")
     public Result<?> uploadImage(@RequestParam("file") MultipartFile file) {
+        // Print the uploadDir here, before it's used
+        System.out.println("Upload directory: " + uploadDir);
+
         if (file.isEmpty()) {
             return Result.error("文件为空");
         }
