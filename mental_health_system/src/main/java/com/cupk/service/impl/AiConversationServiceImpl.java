@@ -27,13 +27,10 @@ public class AiConversationServiceImpl
     private DeepSeekClient deepSeekClient;
 
     @Autowired
-    private AiConversationMapper conversationMapper;
+    private UserMapper userMapper;
 
     @Autowired
     private UserAssessmentService assessmentService;
-
-    @Autowired
-    private UserMapper userMapper;
 
     private static final String PROMPT = PromptLoader.load("prompt/deepseek-persona.txt");
 
@@ -57,8 +54,7 @@ public class AiConversationServiceImpl
                 .last("LIMIT 1")
                 .one();
 
-        String assessmentContext = assessment != null ?
-            "\n用户心理评估背景:\n" + assessment.getReport() : "";
+        String assessmentContext = assessment != null ? "\n用户心理评估背景:\n" + assessment.getReport() : "";
 
         String fullPrompt = PROMPT + assessmentContext;
 
@@ -84,7 +80,8 @@ public class AiConversationServiceImpl
     }
 
     private String extractEmotionJson(String aiResponse) {
-        if (aiResponse == null) return null;
+        if (aiResponse == null)
+            return null;
 
         Pattern pattern = Pattern.compile("🌡️\\s*(\\{.*?})", Pattern.DOTALL);
         Matcher matcher = pattern.matcher(aiResponse);
@@ -100,16 +97,14 @@ public class AiConversationServiceImpl
     public List<String> getUserSessionIds(Long userId) {
         // 查询每个 sessionId 的最新 created_at
         List<Map<String, Object>> list = this.baseMapper.selectMaps(
-            new QueryWrapper<AiConversation>()
-                .select("session_id, MAX(created_at) as last_time")
-                .eq("user_id", userId)
-                .groupBy("session_id")
-                .orderByDesc("last_time")
-        );
+                new QueryWrapper<AiConversation>()
+                        .select("session_id, MAX(created_at) as last_time")
+                        .eq("user_id", userId)
+                        .groupBy("session_id")
+                        .orderByDesc("last_time"));
         // 提取 session_id
         return list.stream()
-            .map(m -> (String) m.get("session_id"))
-            .toList();
+                .map(m -> (String) m.get("session_id"))
+                .toList();
     }
 }
-

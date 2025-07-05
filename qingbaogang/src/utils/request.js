@@ -79,6 +79,13 @@ instance.interceptors.request.use(
             console.log('请求头携带角色信息:', role);
         }
 
+        // 添加用户ID到请求头
+        const userId = localStorage.getItem('userId');
+        if (userId) {
+            config.headers['X-User-ID'] = userId;
+            console.log('请求头携带用户ID:', userId);
+        }
+
         // 添加Content-Type头
         if (config.method === 'patch' || config.method === 'post' || config.method === 'put') {
             if (!config.headers['Content-Type'] && !config.headers.get('Content-Type')) {

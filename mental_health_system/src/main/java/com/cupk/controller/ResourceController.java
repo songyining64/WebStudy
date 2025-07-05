@@ -2,12 +2,9 @@ package com.cupk.controller;
 
 import com.cupk.entity.TextResource;
 import com.cupk.entity.VideoResource;
-import com.cupk.entity.UserAssessment;
 import com.cupk.service.TextResourceService;
 import com.cupk.service.VideoResourceService;
-import com.cupk.service.UserAssessmentService;
 import com.cupk.service.Result;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
@@ -16,6 +13,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,7 +21,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,35 +41,20 @@ public class ResourceController {
     @Autowired
     private TextResourceService textResourceService;
 
-    @Autowired
-    private UserAssessmentService userAssessmentService;
-
     @Value("${upload.dir:src/main/resources/static/upload/}")
     private String uploadDir;
 
     // 推荐资源接口
 
     @GetMapping("/recommend")
-    public Result<?> recommendResources(@RequestParam Long userId) {
-        logger.info("获取用户 {} 的推荐资源", userId);
-        UserAssessment latestAssessment = userAssessmentService.getLatestAssessment(userId);
-
-        List<VideoResource> videoResources = new ArrayList<>();
-        List<TextResource> textResources = new ArrayList<>();
-
-        if (latestAssessment != null) {
-            String emotionTag = extractEmotionTagFromAssessment(latestAssessment.getReport());
-            logger.info("用户 {} 的情绪标签: {}", userId, emotionTag);
-            videoResources = videoResourceService.list(new QueryWrapper<VideoResource>().eq("emotion_tag", emotionTag));
-            textResources = textResourceService.list(new QueryWrapper<TextResource>().eq("emotion_tag", emotionTag));
-        } else {
-            logger.info("用户 {} 没有评估信息，返回默认资源", userId);
-            videoResources = videoResourceService.list(new QueryWrapper<VideoResource>().eq("emotion_tag", "default"));
-            textResources = textResourceService.list(new QueryWrapper<TextResource>().eq("emotion_tag", "default"));
-        }
-
-        logger.info("为用户 {} 返回 {} 个视频资源和 {} 个文案资源", userId, videoResources.size(), textResources.size());
-        return Result.success(new ResourceRecommendation(videoResources, textResources));
+    public Result<Map<String, Object>> recommendResources(@RequestParam Long userId) {
+        // 直接返回所有视频和文案资源，按顺序一一对应
+        List<VideoResource> videos = videoResourceService.list();
+        List<TextResource> texts = textResourceService.list();
+        Map<String, Object> data = new HashMap<>();
+        data.put("videos", videos);
+        data.put("texts", texts);
+        return Result.success(data);
     }
 
     private static class ResourceRecommendation {
@@ -138,20 +120,20 @@ public class ResourceController {
     @PostMapping("/videos")
     public Result<?> addVideo(@RequestBody VideoResource videoResource) {
         logger.info("添加视频资源: {}", videoResource.getTitle());
-        
+
         // 设置上传时间
         videoResource.setUploadTime(LocalDateTime.now());
-        
+
         // 如果没有设置情绪标签，设置默认值
         if (videoResource.getEmotionTag() == null || videoResource.getEmotionTag().isEmpty()) {
             videoResource.setEmotionTag("default");
         }
-        
+
         // 保存视频资源
         try {
-        videoResourceService.save(videoResource);
+            videoResourceService.save(videoResource);
             logger.info("视频资源添加成功，ID: {}", videoResource.getId());
-        return Result.success();
+            return Result.success();
         } catch (Exception e) {
             logger.error("视频资源添加失败: {}", e.getMessage(), e);
             return Result.error("添加失败: " + e.getMessage());
@@ -185,20 +167,20 @@ public class ResourceController {
     @PostMapping("/texts")
     public Result<?> addText(@RequestBody TextResource textResource) {
         logger.info("添加文案资源: {}", textResource.getTitle());
-        
+
         // 设置创建时间
         textResource.setCreateTime(LocalDateTime.now());
-        
+
         // 如果没有设置情绪标签，设置默认值
         if (textResource.getEmotionTag() == null || textResource.getEmotionTag().isEmpty()) {
             textResource.setEmotionTag("default");
         }
-        
+
         // 保存文案资源
         try {
-        textResourceService.save(textResource);
+            textResourceService.save(textResource);
             logger.info("文案资源添加成功，ID: {}", textResource.getId());
-        return Result.success();
+            return Result.success();
         } catch (Exception e) {
             logger.error("文案资源添加失败: {}", e.getMessage(), e);
             return Result.error("添加失败: " + e.getMessage());
@@ -296,5 +278,24 @@ public class ResourceController {
         }
 
         return Result.success(result);
+    }
+
+    @PostMapping("/upload")
+    public Result<String> uploadImage(@RequestParam("file") MultipartFile file) {
+        try {
+            if (file.isEmpty()) {
+                return Result.error("上传文件为空");
+            }
+            String originalFilename = file.getOriginalFilename();
+            String fileName = java.util.UUID.randomUUID() + "_" + originalFilename;
+            java.nio.file.Path uploadPath = java.nio.file.Paths.get(uploadDir, fileName);
+            java.nio.file.Files.createDirectories(uploadPath.getParent());
+            file.transferTo(uploadPath.toFile());
+            String url = "/mental/static/upload/" + fileName;
+            return Result.success(url);
+        } catch (Exception e) {
+            logger.error("图片上传失败", e);
+            return Result.error("图片上传失败: " + e.getMessage());
+        }
     }
 }

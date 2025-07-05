@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Date;
 import java.util.List;
 import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 
 @Service
 public class SystemNoticeServiceImpl extends ServiceImpl<SystemNoticeMapper, SystemNotice>
@@ -22,6 +23,7 @@ public class SystemNoticeServiceImpl extends ServiceImpl<SystemNoticeMapper, Sys
 
     private static final Logger log = LoggerFactory.getLogger(SystemNoticeServiceImpl.class);
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Override
     public IPage<SystemNotice> pageSystemNotices(int page, int size, String keyword) {
@@ -51,9 +53,9 @@ public class SystemNoticeServiceImpl extends ServiceImpl<SystemNoticeMapper, Sys
             if (firstNotice.getCreateTime() != null) {
                 log.info("时间详情 - 创建时间: {}, 小时:{}, 分钟:{}, 秒:{}",
                         DATE_FORMAT.format(firstNotice.getCreateTime()),
-                        firstNotice.getCreateTime().getHours(),
-                        firstNotice.getCreateTime().getMinutes(),
-                        firstNotice.getCreateTime().getSeconds());
+                        firstNotice.getCreateTime().toLocalDateTime().getHour(),
+                        firstNotice.getCreateTime().toLocalDateTime().getMinute(),
+                        firstNotice.getCreateTime().toLocalDateTime().getSecond());
             }
         }
 
@@ -76,9 +78,9 @@ public class SystemNoticeServiceImpl extends ServiceImpl<SystemNoticeMapper, Sys
             if (firstNotice.getCreateTime() != null) {
                 log.info("时间详情 - 创建时间: {}, 小时:{}, 分钟:{}, 秒:{}",
                         DATE_FORMAT.format(firstNotice.getCreateTime()),
-                        firstNotice.getCreateTime().getHours(),
-                        firstNotice.getCreateTime().getMinutes(),
-                        firstNotice.getCreateTime().getSeconds());
+                        firstNotice.getCreateTime().toLocalDateTime().getHour(),
+                        firstNotice.getCreateTime().toLocalDateTime().getMinute(),
+                        firstNotice.getCreateTime().toLocalDateTime().getSecond());
             }
         }
 
@@ -99,7 +101,9 @@ public class SystemNoticeServiceImpl extends ServiceImpl<SystemNoticeMapper, Sys
         // 记录日志，确认时间格式
         log.info("添加系统公告，时间设置为: {}", now);
         log.info("时间详情 - 小时:{}, 分钟:{}, 秒:{}",
-                now.getHours(), now.getMinutes(), now.getSeconds());
+                now.toLocalDateTime().getHour(),
+                now.toLocalDateTime().getMinute(),
+                now.toLocalDateTime().getSecond());
 
         // 默认为有效状态
         if (notice.getStatus() == null) {
@@ -147,9 +151,9 @@ public class SystemNoticeServiceImpl extends ServiceImpl<SystemNoticeMapper, Sys
             if (notice.getCreateTime() != null) {
                 log.info("时间详情 - 创建时间: {}, 小时:{}, 分钟:{}, 秒:{}",
                         DATE_FORMAT.format(notice.getCreateTime()),
-                        notice.getCreateTime().getHours(),
-                        notice.getCreateTime().getMinutes(),
-                        notice.getCreateTime().getSeconds());
+                        notice.getCreateTime().toLocalDateTime().getHour(),
+                        notice.getCreateTime().toLocalDateTime().getMinute(),
+                        notice.getCreateTime().toLocalDateTime().getSecond());
             }
         }
 

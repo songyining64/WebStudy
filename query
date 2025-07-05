@@ -284,3 +284,5 @@ CREATE TABLE IF NOT EXISTS `system_notice` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统公告表';
 
 ALTER TABLE emotion_record ADD COLUMN analysis_report TEXT COMMENT '情绪分析报告';
+
+ALTER TABLE text_resource ADD COLUMN image_url VARCHAR(255) COMMENT '文案图片URL';

@@ -90,6 +90,7 @@
             <tr>
               <th>ID</th>
               <th>标题</th>
+              <th>图片</th>
               <th>情绪标签</th>
               <th>创建时间</th>
               <th>操作</th>
@@ -99,6 +100,9 @@
             <tr v-for="text in texts" :key="text.id">
               <td>{{ text.id }}</td>
               <td>{{ text.title }}</td>
+              <td>
+                <img v-if="text.imageUrl" :src="text.imageUrl" alt="图片" style="max-width: 60px;" />
+              </td>
               <td>
                 <span :class="['tag', getTagClass(text.emotionTag)]">
                   {{ getEmotionTagText(text.emotionTag) }}
@@ -180,6 +184,13 @@
               <option value="high_risk">深度关怀</option>
               <option value="default">通用资源</option>
             </select>
+          </div>
+          <div class="form-group">
+            <label>图片</label>
+            <input type="file" @change="handleTextImageUpload" />
+            <div v-if="editingText.imageUrl">
+              <img :src="editingText.imageUrl" alt="图片预览" style="max-width: 100px; margin-top: 8px;" />
+            </div>
           </div>
         </div>
         <div class="modal-footer">
@@ -395,42 +406,54 @@ export default {
       }
     },
     
+    async handleTextImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
+        const res = await fetch('/api/resource/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const result = await res.json();
+        if (result.code === 200 && result.data) {
+          this.editingText.imageUrl = result.data;
+          this.$message.success('图片上传成功');
+        } else {
+          this.$message.error('图片上传失败');
+        }
+      } catch (e) {
+        this.$message.error('图片上传失败');
+      }
+    },
+    
     async saveText() {
       try {
         const userStore = useUserStore();
-        
-        // 验证必填字段
         if (!this.editingText.title || !this.editingText.content) {
           ElMessage.error('标题和内容为必填项');
           return;
         }
-        
-        // 如果有用户ID，设置作者ID，否则不设置
-        if (userStore.userId) {
-          this.editingText.authorId = userStore.userId;
-        } else {
-          // 不设置authorId，让后端处理
-          this.editingText.authorId = null;
+        const payload = {
+          title: this.editingText.title,
+          content: this.editingText.content,
+          emotionTag: this.editingText.emotionTag || 'default',
+          authorId: userStore.userId || null,
+          imageUrl: this.editingText.imageUrl || ''
+        };
+        if (this.editingText.id) {
+          payload.id = this.editingText.id;
         }
-        
-        // 确保emotionTag有值
-        if (!this.editingText.emotionTag) {
-          this.editingText.emotionTag = 'default';
-        }
-        
-        // 打印要发送的数据
-        console.log('准备保存的文案数据:', JSON.stringify(this.editingText));
-        
-        // 保存文案
+        console.log('准备保存的文案数据:', JSON.stringify(payload));
         let response;
         try {
           if (this.editingText.id) {
-            response = await updateText(this.editingText);
+            response = await updateText(payload);
           } else {
-            response = await addText(this.editingText);
+            response = await addText(payload);
           }
           console.log('保存文案响应:', response);
-          
           if (response && response.code === 200) {
             ElMessage.success(this.editingText.id ? '更新成功' : '添加成功');
             this.closeTextModal();

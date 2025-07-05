@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.cupk.entity.Post;
 import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
 
 public interface PostService extends IService<Post> {
     /**
@@ -126,4 +128,20 @@ public interface PostService extends IService<Post> {
      * @return 是否删除成功
      */
     boolean deletePostByUser(Long postId, Long userId);
+
+    /**
+     * 获取热门标签云
+     * 
+     * @param limit 返回标签数量限制
+     * @return 标签列表，每个标签包含name和count属性
+     */
+    List<Map<String, Object>> getHotTags(int limit);
+
+    /**
+     * 获取本周热门帖子
+     * 
+     * @param limit 返回帖子数量限制
+     * @return 热门帖子列表
+     */
+    List<Post> getHotPostsOfWeek(int limit);
 }
