@@ -9,17 +9,19 @@
 
     <!-- 统计卡片 -->
     <div class="stats-row">
-      <el-row :gutter="20">
+      <el-row :gutter="30">
         <el-col :xs="12" :sm="12" :md="6" :lg="6" v-for="(item, index) in statsCards" :key="index">
-          <el-card shadow="hover" class="stats-card" :style="{ background: item.bgColor }">
-            <div class="stats-icon">
-              <el-icon :size="36"><component :is="item.icon"></component></el-icon>
+          <div class="stats-card-wrapper" :style="{ background: item.bgColor }">
+            <div class="stats-top">
+              <div class="stats-icon">
+                <el-icon :size="38"><component :is="item.icon"></component></el-icon>
+              </div>
+              <div class="stats-number">{{ item.value || 0 }}</div>
             </div>
-            <div class="stats-info">
-              <h2 class="stats-number">{{ item.value || 0 }}</h2>
+            <div class="stats-bottom">
               <div class="stats-label">{{ item.label }}</div>
             </div>
-          </el-card>
+          </div>
         </el-col>
       </el-row>
     </div>
@@ -546,25 +548,25 @@ const statsCards = computed(() => [
     icon: 'UserFilled',
     label: '用户总数',
     value: stats.value.userCount,
-    bgColor: 'linear-gradient(135deg, #6B73FF 10%, #6476FF 100%)'
+    bgColor: 'linear-gradient(120deg, #6366F1 0%, #8B5CF6 100%)'
   },
   {
     icon: 'Document',
     label: '帖子总数',
     value: stats.value.postCount,
-    bgColor: 'linear-gradient(135deg, #36D1DC 10%, #5B86E5 100%)'
+    bgColor: 'linear-gradient(120deg, #10B981 0%, #059669 100%)'
   },
   {
     icon: 'ChatDotRound',
     label: '评论总数',
     value: stats.value.commentCount,
-    bgColor: 'linear-gradient(135deg, #FF9966 10%, #FF5E62 100%)'
+    bgColor: 'linear-gradient(120deg, #F59E0B 0%, #D97706 100%)'
   },
   {
     icon: 'Histogram',
     label: '评估数据',
     value: stats.value.assessmentCount + stats.value.emotionRecordCount,
-    bgColor: 'linear-gradient(135deg, #43C6AC 10%, #4B83C0 100%)'
+    bgColor: 'linear-gradient(120deg, #EC4899 0%, #BE185D 100%)'
   }
 ]);
 
@@ -1307,66 +1309,152 @@ onMounted(async () => {
 }
 
 .admin-header {
-  margin-bottom: 20px;
+  margin-bottom: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  overflow: hidden;
 }
 
 .admin-title {
   text-align: center;
+  padding: 30px 0;
 }
 
 .admin-title h1 {
-  margin: 10px 0;
-  color: #303133;
+  margin: 0 0 10px 0;
+  color: #ffffff;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 .admin-subtitle {
-  color: #909399;
-  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 16px;
+  letter-spacing: 0.5px;
 }
 
 .stats-row {
-  margin-bottom: 20px;
+  margin-bottom: 30px;
 }
 
-.stats-card {
+.stats-card-wrapper {
   display: flex;
-  align-items: center;
-  height: 100px;
+  flex-direction: column;
+  height: 160px;
   overflow: hidden;
   color: white;
+  border-radius: 12px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  padding: 12px 15px 0 15px;
+  position: relative;
+}
+
+.stats-card-wrapper:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+}
+
+.stats-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
 }
 
 .stats-icon {
-  margin-right: 15px;
-}
-
-.stats-info {
-  flex-grow: 1;
+  background-color: rgba(255, 255, 255, 0.2);
+  padding: 12px;
+  border-radius: 50%;
+  margin-bottom: 5px;
+  z-index: 2;
 }
 
 .stats-number {
-  font-size: 28px;
-  font-weight: bold;
-  margin: 0 0 5px 0;
+  font-size: 50px;
+  font-weight: 700;
+  line-height: 0.9;
+  z-index: 2;
+  text-align: center;
+  margin-top: -5px;
+}
+
+.stats-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(255, 255, 255, 0.15);
+  padding: 8px 0;
+  z-index: 2;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  width: 100%;
+  margin-top: auto;
 }
 
 .stats-label {
-  font-size: 14px;
-  opacity: 0.8;
+  font-size: 16px;
+  font-weight: 500;
+  opacity: 0.95;
+  letter-spacing: 0.5px;
+  text-align: center;
 }
 
 .admin-content {
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+  border-radius: 12px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+:deep(.el-tabs__header) {
+  margin: 0;
+  background: #f9f9f9;
+  border-bottom: 1px solid #eaeaea;
+  padding: 0 20px;
+}
+
+:deep(.el-tabs__nav) {
+  border: none !important;
+}
+
+:deep(.el-tabs__item) {
+  font-size: 16px;
+  padding: 0 22px;
+  height: 50px;
+  line-height: 50px;
+  transition: all 0.2s;
+}
+
+:deep(.el-tabs__item.is-active) {
+  font-weight: 600;
+  color: #6a11cb;
+}
+
+:deep(.el-tabs__active-bar) {
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+}
+
+:deep(.el-tabs__content) {
+  padding: 20px;
 }
 
 .table-operations {
-  margin-bottom: 20px;
+  margin-bottom: 22px;
   display: flex;
-  gap: 10px;
+  gap: 15px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .search-input {
-  width: 300px;
+  width: 350px;
 }
 
 .user-info {
@@ -1375,53 +1463,59 @@ onMounted(async () => {
 }
 
 .user-detail {
-  margin-left: 10px;
+  margin-left: 15px;
 }
 
 .user-name {
-  font-weight: bold;
+  font-weight: 600;
+  font-size: 15px;
+  color: #333;
 }
 
 .user-email {
-  font-size: 12px;
-  color: #909399;
+  font-size: 13px;
+  color: #666;
+  margin-top: 4px;
 }
 
 .post-title {
-  font-weight: bold;
+  font-weight: 600;
+  font-size: 15px;
+  color: #333;
 }
 
 .post-author {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .post-stats {
   display: flex;
-  gap: 10px;
+  gap: 15px;
 }
 
 .post-stats span {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   font-size: 14px;
 }
 
 .pagination-container {
-  margin-top: 20px;
+  margin-top: 30px;
+  margin-bottom: 10px;
   display: flex;
   justify-content: center;
 }
 
 .user-detail-card {
-  padding: 20px;
+  padding: 25px;
 }
 
 .user-detail-header {
   display: flex;
-  gap: 20px;
+  gap: 25px;
 }
 
 .user-detail-info {
@@ -1430,31 +1524,37 @@ onMounted(async () => {
 
 .user-detail-info h2 {
   margin-top: 0;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  color: #303133;
+  font-size: 22px;
 }
 
 .user-detail-info p {
-  margin: 8px 0;
+  margin: 12px 0;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 10px;
   color: #606266;
+  font-size: 15px;
 }
 
 .confirm-content {
-  padding: 20px 0;
+  padding: 25px 0;
   color: #606266;
 }
 
 .no-data {
   text-align: center;
-  padding: 30px;
+  padding: 50px;
   color: #909399;
+  font-size: 16px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
 }
 
 /* 系统公告管理样式 */
 .settings-container {
-  margin-bottom: 20px;
+  margin-bottom: 25px;
 }
 
 .settings-header {
@@ -1462,12 +1562,15 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eaeaea;
 }
 
 .settings-header h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
+  color: #333;
 }
 
 .notice-content-preview {
@@ -1477,56 +1580,189 @@ onMounted(async () => {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 6px;
 }
 
 .notice-header {
   margin-bottom: 20px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 10px;
+  border-bottom: 1px solid #eaeaea;
+  padding-bottom: 15px;
 }
 
 .notice-meta {
   display: flex;
-  gap: 15px;
-  margin-top: 10px;
+  gap: 20px;
+  margin-top: 12px;
   color: #666;
   font-size: 14px;
 }
 
 .notice-content {
-  padding: 10px;
+  padding: 20px;
   background-color: #f9f9f9;
-  border-radius: 4px;
-  min-height: 100px;
+  border-radius: 8px;
+  min-height: 120px;
+  border: 1px solid #eaeaea;
 }
 
 /* 评估问卷详情样式 */
 .assessment-detail .detail-header {
   margin-bottom: 20px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 10px;
+  border-bottom: 1px solid #eaeaea;
+  padding-bottom: 15px;
 }
 
 .assessment-detail .detail-meta {
   display: flex;
-  gap: 15px;
-  margin-top: 10px;
+  gap: 20px;
+  margin-top: 12px;
   color: #666;
   font-size: 14px;
 }
 
 .assessment-detail .detail-content {
-  padding-top: 10px;
+  padding: 20px;
+  background-color: #fafafa;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 
 /* 情绪记录样式 */
 .score {
   font-weight: bold;
   color: #409EFF;
+  font-size: 16px;
 }
 
 .user-id {
-  font-size: 12px;
-  color: #999;
+  font-size: 13px;
+  color: #909399;
+  margin-top: 3px;
+}
+
+/* 表格样式增强 */
+:deep(.el-table) {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+:deep(.el-table th) {
+  background-color: #f5f7fa;
+  font-weight: 600;
+  color: #303133;
+  padding: 15px 0;
+}
+
+:deep(.el-table td) {
+  padding: 14px 0;
+}
+
+:deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
+  background-color: #fafafa;
+}
+
+:deep(.el-pagination) {
+  padding: 15px 0;
+}
+
+:deep(.el-pagination .el-pagination__total) {
+  font-weight: 500;
+}
+
+:deep(.el-pagination button:disabled) {
+  background-color: #f5f7fa;
+}
+
+:deep(.el-pagination .btn-next,
+.el-pagination .btn-prev) {
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+:deep(.el-pagination .el-pager li) {
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+  font-weight: 500;
+}
+
+:deep(.el-pagination .el-pager li.is-active) {
+  background-color: #409EFF;
+  color: #fff;
+  border-color: #409EFF;
+  font-weight: 600;
+}
+
+:deep(.el-tabs__nav-wrap::after) {
+  height: 1px;
+}
+
+:deep(.el-tabs__active-bar) {
+  height: 3px;
+  border-radius: 3px;
+}
+
+:deep(.el-tabs__item) {
+  font-size: 16px;
+  padding: 0 22px;
+  height: 50px;
+  line-height: 50px;
+  transition: all 0.2s;
+}
+
+:deep(.el-tabs__item.is-active) {
+  font-weight: 600;
+}
+
+:deep(.el-button) {
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+:deep(.el-button--primary) {
+  font-weight: 500;
+}
+
+:deep(.el-input__inner) {
+  border-radius: 6px;
+}
+
+:deep(.el-tag) {
+  border-radius: 4px;
+  padding: 0 10px;
+  height: 28px;
+  line-height: 28px;
+  font-weight: 500;
+}
+
+:deep(.el-dialog) {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+:deep(.el-dialog__header) {
+  padding: 20px;
+  margin: 0;
+  border-bottom: 1px solid #f0f0f0;
+  background-color: #f9f9f9;
+}
+
+:deep(.el-dialog__title) {
+  font-weight: 600;
+  font-size: 18px;
+  color: #333;
+}
+
+:deep(.el-dialog__body) {
+  padding: 25px;
+}
+
+:deep(.el-dialog__footer) {
+  padding: 15px 20px;
+  border-top: 1px solid #f0f0f0;
+  background-color: #f9f9f9;
 }
 </style> 
